@@ -4,7 +4,7 @@
 
 # aekr-web
 
-The public website for **aekr.com** — a single static page explaining what
+The public website for **aekr.io** — a single static page explaining what
 AEKR (AI Engineering Knowledge Repo) is, in about 10–15 seconds.
 
 - **Status:** first implementation, pre-deploy
@@ -49,7 +49,7 @@ npx serve public
 
 ## Deployment
 
-Cloudflare Workers (static assets), custom domain `aekr.com`. No server,
+Cloudflare Workers (static assets), custom domain `aekr.io`. No server,
 no database, no paid services required. Deploy command: `npx wrangler
 deploy`, run from the repo root — `wrangler.jsonc` points at `./public`.
 
