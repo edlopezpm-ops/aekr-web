@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/aekr-logo.png" alt="AEKR — AI Engineering Knowledge Repo" width="200">
+  <img src="public/assets/aekr-logo.png" alt="AEKR — AI Engineering Knowledge Repo" width="200">
 </p>
 
 # aekr-web
@@ -13,37 +13,48 @@ AEKR (AI Engineering Knowledge Repo) is, in about 10–15 seconds.
 
 ## Stack
 
-Plain HTML + CSS. No JavaScript, no framework, no build tool. Deploys as
-static files to Cloudflare Pages.
+Static HTML + CSS, plus one small dependency-free script for the
+interactive background (canvas starfield, no framework, no bundler). No
+Vanta/Three.js, no npm dependencies at runtime. Deploys to Cloudflare
+Workers static assets via `wrangler deploy`.
 
 ```
 aekr-web/
-├── index.html
-├── styles.css
-├── assets/
-│   ├── aekr-logo.png
-│   ├── aekr-banner.png
-│   └── AEKR-BANNER-LICENSE.txt
-├── favicon.ico
+├── public/                  ← deployed as-is (wrangler.jsonc assets.directory)
+│   ├── index.html
+│   ├── styles.css
+│   ├── script.js
+│   ├── 404.html
+│   ├── favicon.ico
+│   ├── robots.txt
+│   ├── _headers
+│   └── assets/
+│       ├── aekr-logo.png
+│       ├── aekr-banner.png
+│       └── AEKR-BANNER-LICENSE.txt
+├── wrangler.jsonc            ← deploy config, not part of the site
 ├── LICENSE
 └── README.md
 ```
 
+Everything Cloudflare serves lives under `public/`. Repo metadata
+(`README.md`, `LICENSE`, `wrangler.jsonc`) stays at root, outside the
+assets directory, so it's never walked or uploaded.
+
 ## Local preview
 
-Open `index.html` directly in a browser, or serve the folder:
-
 ```
-npx serve .
+npx serve public
 ```
 
 ## Deployment
 
-Intended target: Cloudflare Pages, custom domain `aekr.com`. No server, no
-database, no paid services required.
+Cloudflare Workers (static assets), custom domain `aekr.com`. No server,
+no database, no paid services required. Deploy command: `npx wrangler
+deploy`, run from the repo root — `wrangler.jsonc` points at `./public`.
 
 ---
 
 Built with the **AI Engineering Knowledge Repo (AEKR)** workflow.
 
-![Build with AEKR](assets/aekr-banner.png)
+![Build with AEKR](public/assets/aekr-banner.png)

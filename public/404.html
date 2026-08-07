@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Not found — AEKR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .not-found {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--space-2);
+  }
+  .not-found h1 {
+    font-size: clamp(2rem, 6vw, 3rem);
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="atmosphere" aria-hidden="true">
+  <canvas class="atmosphere__starfield"></canvas>
+  <div class="atmosphere__nebula"></div>
+  <div class="atmosphere__cursor-field"></div>
+  <div class="atmosphere__scrim"></div>
+</div>
+
+<header class="site-header">
+  <span class="wordmark">AEKR</span>
+</header>
+
+<main class="not-found">
+  <h1>Page not found</h1>
+  <p class="hero-sub">This page doesn't exist.</p>
+  <p><a href="/">Back to AEKR</a></p>
+</main>
+
+<script src="/script.js" defer></script>
+</body>
+</html>
