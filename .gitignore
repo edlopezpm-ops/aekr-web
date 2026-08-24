@@ -1,3 +1,9 @@
 .DS_Store
 Thumbs.db
 .wrangler
+
+# Internal change briefs — commercial model and pricing, not website source.
+Aug-24 Change - *.md
+
+# Local visual QA scratch output
+.qa-*.png

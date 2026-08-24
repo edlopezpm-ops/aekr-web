@@ -1,16 +1,42 @@
+/* ==========================================================================
+   AEKR — design tokens
+   ========================================================================== */
+
 :root {
   --bg: #05070a;
   --bg-alt: #0a0e14;
+  --bg-panel: #080c12;
   --fg: #eef1f5;
   --fg-muted: #9aa4b2;
+  --fg-faint: #788292;
+
+  /* The characteristic AEKR green, taken from the brand mark. --accent is kept
+     as the historical name; --aekr-green is the brand-level alias used by the
+     terminal-letter signature. */
   --accent: #4dd6c0;
+  --aekr-green: var(--accent);
+  --accent-deep: #04211d;
+  --accent-dim: #2f8676;
+
   --border: #1c222c;
-  --max-width: 760px;
+  --border-soft: #141a22;
+
+  --max-width: 1060px;
+  --measure: 64ch;
+
   --space-1: 0.5rem;
   --space-2: 1rem;
   --space-3: 1.75rem;
   --space-4: 3rem;
   --space-5: 5rem;
+  --space-6: 7rem;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
   --nebula-mint: #4dd6c0;
   --nebula-steel: #6f8fae;
   --atmosphere-density: 0.55;
@@ -26,16 +52,25 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+
+/* ==========================================================================
+   Atmosphere
+   ========================================================================== */
 
 .atmosphere {
   position: fixed;
@@ -79,7 +114,7 @@ body {
 .atmosphere__scrim {
   background:
     radial-gradient(ellipse 55% 60% at 50% 30%, color-mix(in srgb, var(--bg) 55%, transparent) 0 30%, transparent 78%),
-    linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), transparent 22% 70%, var(--bg) 96%);
+    linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), transparent 22% 62%, var(--bg) 92%);
 }
 
 .site-header,
@@ -89,34 +124,91 @@ main,
   z-index: 1;
 }
 
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  background: var(--accent);
-  color: #04211d;
-  padding: 0.75rem 1rem;
-  z-index: 10;
-}
-
-.skip-link:focus {
-  left: var(--space-2);
-  top: var(--space-2);
-}
+/* ==========================================================================
+   Base elements
+   ========================================================================== */
 
 a {
   color: var(--accent);
+  text-underline-offset: 0.2em;
 }
 
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+  border-radius: 3px;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+h1, h2, h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--accent-deep);
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  z-index: 20;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+  top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Terminal-letter signature
+
+   The final alphabetic character of a sentence-like passage, in the AEKR
+   green. Authored directly in the markup so there is no post-render DOM
+   mutation, no layout shift, and nothing for a screen reader to stumble on —
+   the character is read inline as part of the surrounding word.
+   -------------------------------------------------------------------------- */
+
+.terminal-glyph {
+  color: var(--aekr-green);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
-  padding: var(--space-3) var(--space-3) 0;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 200ms var(--ease-standard);
+}
+
+.site-header.is-stuck {
+  border-bottom-color: var(--border-soft);
 }
 
 .wordmark {
@@ -124,7 +216,48 @@ a {
   font-weight: 600;
   letter-spacing: 0.28em;
   color: var(--fg);
+  text-decoration: none;
+  flex-shrink: 0;
 }
+
+.site-nav {
+  display: flex;
+  gap: var(--space-3);
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+.site-nav a {
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color 160ms var(--ease-standard);
+}
+
+.site-nav a:hover {
+  color: var(--fg);
+}
+
+.header-cta {
+  flex-shrink: 0;
+  margin-left: var(--space-3);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.4rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  transition: background-color 160ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+
+.header-cta:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
 
 main {
   max-width: var(--max-width);
@@ -132,134 +265,716 @@ main {
   padding: 0 var(--space-3);
 }
 
+.section {
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.section > h2 {
+  font-size: clamp(1.6rem, 3.4vw, 2.15rem);
+  margin: 0 0 var(--space-3);
+  letter-spacing: -0.015em;
+  max-width: 20ch;
+}
+
+.section p {
+  color: var(--fg-muted);
+  max-width: var(--measure);
+}
+
+.section > p + p {
+  margin-top: var(--space-2);
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-dim);
+  margin: 0 0 var(--space-2);
+}
+
+.lede {
+  font-size: clamp(1.05rem, 1.9vw, 1.2rem);
+  color: var(--fg) !important;
+  line-height: 1.55;
+}
+
+.note {
+  font-size: 0.95rem;
+  color: var(--fg-faint) !important;
+  border-left: 2px solid var(--border);
+  padding-left: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+
 .hero {
   text-align: center;
-  padding: var(--space-5) 0 var(--space-4);
+  padding: var(--space-5) 0 var(--space-5);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .hero-mark {
-  width: clamp(96px, 22vw, 168px);
+  width: clamp(104px, 20vw, 168px);
   height: auto;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
-.hero h1 {
-  font-size: clamp(2.5rem, 8vw, 4rem);
-  letter-spacing: 0.12em;
+.hero-title {
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  letter-spacing: 0.14em;
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
+  text-indent: 0.14em;
 }
 
-.hero-sub {
+.hero-expansion {
   margin: var(--space-1) 0 0;
   color: var(--fg-muted);
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+  letter-spacing: 0.02em;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent-dim);
+  margin: var(--space-3) 0 0;
+}
+
+.hero-lede {
+  margin: var(--space-3) auto 0;
+  max-width: 54ch;
+  font-size: clamp(1.05rem, 2vw, 1.22rem);
+  color: var(--fg-muted);
+  line-height: 1.6;
 }
 
 .hero-tagline {
-  margin: var(--space-2) 0 0;
-  font-size: 1.2rem;
+  margin: var(--space-3) 0 0;
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
   color: var(--fg);
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
-.section {
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--border);
-}
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
 
-.section h2 {
-  font-size: 1.5rem;
-  margin: 0 0 var(--space-2);
-}
-
-.section p {
-  color: var(--fg-muted);
-  font-size: 1.05rem;
-  max-width: 62ch;
-}
-
-.section-alt {
-  background: var(--bg-alt);
-  margin: 0 calc(var(--space-3) * -1);
-  padding: var(--space-4) var(--space-3);
-  border-radius: 12px;
-}
-
-.progression {
+.cta-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0 0 var(--space-3);
-  padding: 0;
-  color: var(--fg);
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-4);
 }
 
-.progression .arrow {
+.cta-inline {
+  margin-top: var(--space-4);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms var(--ease-standard),
+    border-color 180ms var(--ease-standard),
+    color 180ms var(--ease-standard),
+    transform 180ms var(--ease-standard);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-deep);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, white);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.btn-ghost:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);
 }
 
-.flow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================================================
+   Principles grid
+   ========================================================================== */
+
+.principles {
   list-style: none;
   padding: 0;
-  margin: var(--space-3) 0 0;
-  counter-reset: step;
+  margin: var(--space-4) 0 0;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
 }
 
-.flow li {
-  counter-increment: step;
+.principles li {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--bg-panel) 70%, transparent);
+}
+
+.principles h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.005em;
+}
+
+.principles p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--fg-muted);
+  max-width: none;
+}
+
+/* ==========================================================================
+   Terminology
+   ========================================================================== */
+
+.terms {
+  margin: var(--space-4) 0 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.term {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding-left: var(--space-3);
+}
+
+.term dt {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.term-plain {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 400;
+}
+
+.term dd {
+  margin: var(--space-1) 0 0;
+  color: var(--fg-muted);
+  font-size: 0.98rem;
+  max-width: var(--measure);
+}
+
+/* ==========================================================================
+   Lifecycle
+   ========================================================================== */
+
+.lifecycle {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  position: relative;
+}
+
+.lifecycle::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 30%, transparent) 12%,
+    var(--border) 45%,
+    var(--border) 70%,
+    transparent
+  );
+}
+
+.phase {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+}
+
+.phase:last-child {
+  padding-bottom: 0;
+}
+
+.phase-index {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--accent-dim);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.9rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.phase-body h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.phase-plain {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 400;
+}
+
+.phase-body p {
+  margin: 0;
+  font-size: 0.95rem;
   color: var(--fg-muted);
 }
 
-.flow li::before {
-  content: counter(step) " · ";
+.lifecycle-layer {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  font-size: 0.95rem;
+  color: var(--fg-muted) !important;
+  max-width: none !important;
+}
+
+.layer-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  margin-right: 0.6rem;
+  vertical-align: 0.05em;
+}
+
+/* ==========================================================================
+   Marks list
+   ========================================================================== */
+
+.marks {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.marks li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--fg-muted);
+  font-size: 0.98rem;
+}
+
+.marks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+
+/* ==========================================================================
+   Contact
+   ========================================================================== */
+
+.section-contact {
+  padding-bottom: var(--space-5);
+}
+
+.contact-form {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+  max-width: 34rem;
+}
+
+.field {
+  margin-bottom: var(--space-3);
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.01em;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: var(--fg-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  transition: border-color 160ms var(--ease-standard);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--fg-faint);
+}
+
+.field input:hover,
+.field textarea:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.field input[aria-invalid="true"] {
+  border-color: #e0736a;
+}
+
+.field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--fg-faint);
+}
+
+/* Honeypot — off-screen rather than display:none so automated fillers still
+   reach it, but it is out of the tab order and hidden from assistive tech. */
+.field-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.btn-pricing {
+  background: var(--accent);
+  color: var(--accent-deep);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.btn-pricing:hover {
+  background: color-mix(in srgb, var(--accent) 88%, white);
+  box-shadow: 0 6px 22px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.form-status {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9rem;
+  min-height: 1.4em;
+  color: var(--fg-muted);
+}
+
+.form-status--success {
   color: var(--accent);
 }
+
+.form-status--error {
+  color: #e0736a;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
 
 .site-footer {
   text-align: center;
-  padding: var(--space-4) var(--space-3) var(--space-5);
+  padding: var(--space-5) var(--space-3) var(--space-5);
   color: var(--fg-muted);
   font-size: 0.9rem;
+  border-top: 1px solid var(--border-soft);
+  max-width: var(--max-width);
+  margin: 0 auto;
 }
 
 .site-footer p {
   margin: 0.25rem 0;
 }
 
+.footer-brand {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: var(--fg);
+  text-indent: 0.28em;
+}
+
+.footer-expansion {
+  color: var(--fg-faint);
+  font-size: 0.82rem;
+}
+
+.footer-line {
+  margin-top: var(--space-2) !important;
+}
+
 .provenance {
-  margin-top: var(--space-3);
-  font-size: 0.8rem;
+  margin-top: var(--space-4) !important;
 }
 
 .provenance img {
-  width: clamp(220px, 45vw, 360px);
+  width: clamp(200px, 42vw, 320px);
   height: auto;
-  margin-top: var(--space-2);
+  opacity: 0.85;
 }
 
-@media (max-width: 480px) {
-  .section-alt {
-    border-radius: 0;
+.footer-legal {
+  margin-top: var(--space-3) !important;
+  color: var(--fg-faint);
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  main {
+    padding: 0 var(--space-4);
+  }
+
+  .site-header {
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .section {
+    padding: var(--space-6) 0;
+  }
+
+  .hero {
+    padding: var(--space-6) 0;
+  }
+
+  .principles {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .phase {
+    grid-template-columns: 3rem 1fr;
+  }
+
+  .contact-form {
+    padding: var(--space-4);
   }
 }
 
+/* Desktop */
+@media (min-width: 1024px) {
+  .section {
+    display: grid;
+    grid-template-columns: 13rem 1fr;
+    column-gap: var(--space-4);
+    align-items: start;
+  }
+
+  /* The label becomes a margin note; everything else stays in the content
+     column so measure and rhythm are unaffected. */
+  .section > .section-label {
+    grid-column: 1;
+    grid-row: 1 / span 99;
+    position: sticky;
+    top: 6rem;
+    margin: 0;
+  }
+
+  .section > *:not(.section-label) {
+    grid-column: 2;
+  }
+
+  .hero {
+    display: flex;
+  }
+}
+
+/* Small phones */
+@media (max-width: 767px) {
+  .site-nav {
+    display: none;
+  }
+
+  .header-cta {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --space-3: 1.25rem;
+    --space-5: 3.5rem;
+  }
+
+  .hero-title {
+    letter-spacing: 0.1em;
+    text-indent: 0.1em;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .phase {
+    grid-template-columns: 2.2rem 1fr;
+    gap: 0.75rem;
+  }
+
+  .lifecycle::before {
+    left: 0.8rem;
+  }
+
+  .phase-index {
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.65rem;
+  }
+
+  .term {
+    padding-left: var(--space-2);
+  }
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* ==========================================================================
+   404
+   ========================================================================== */
+
+.not-found {
+  min-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.not-found h1 {
+  font-size: clamp(2rem, 6vw, 3rem);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.not-found .hero-lede {
+  margin-top: 0;
 }

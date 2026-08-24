@@ -1,8 +1,22 @@
 {
   "name": "aekr-web",
+  "main": "src/index.js",
   "compatibility_date": "2026-08-07",
   "assets": {
     "directory": "./public",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
+  },
+  // Delivery for the contact form. The destination mailbox is NOT stored here —
+  // it is set as a Worker secret so it never enters the repo or the client
+  // bundle:  npx wrangler secret put CONTACT_RECIPIENT_EMAIL
+  "send_email": [
+    { "name": "EMAIL" }
+  ],
+  "vars": {
+    "CONTACT_SENDER_EMAIL": "website@aekr.io"
+  },
+  "observability": {
+    "enabled": true
   }
 }

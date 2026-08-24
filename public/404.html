@@ -5,25 +5,12 @@
 <title>Not found — AEKR</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#05070a">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="stylesheet" href="/styles.css">
-<style>
-  .not-found {
-    min-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: var(--space-2);
-  }
-  .not-found h1 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    margin: 0;
-  }
-</style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <div class="atmosphere" aria-hidden="true">
   <canvas class="atmosphere__starfield"></canvas>
@@ -33,13 +20,19 @@
 </div>
 
 <header class="site-header">
-  <span class="wordmark">AEKR</span>
+  <a class="wordmark" href="/" aria-label="AEKR — home">AEKR</a>
+  <a class="header-cta" href="/#contact">Contact</a>
 </header>
 
-<main class="not-found">
+<main id="main" class="not-found">
+  <p class="section-label">404</p>
   <h1>Page not found</h1>
-  <p class="hero-sub">This page doesn't exist.</p>
-  <p><a href="/">Back to AEKR</a></p>
+  <p class="hero-lede">
+    That page is not part of this sit<span class="terminal-glyph">e</span>.
+  </p>
+  <p class="cta-inline">
+    <a class="btn btn-primary" href="/">Back to AEKR</a>
+  </p>
 </main>
 
 <script src="/script.js" defer></script>
