@@ -1,9 +1,68 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; professionalization delivered, with an authorized nebula and official-wordmark follow-up.
+**Status:** Existing public website; section navigation and official-symbol motion refinement.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Nebular transition refinement — 2026-09-05
+
+Ed requested smoother, living nebular transitions and a continuous official-symbol
+movement from the hero into an enlarged, centered header; the symbol stays docked
+between content views and returns above the hero lettering on home navigation.
+This refines the existing experience rather than replacing its content or visual
+identity. The same session authorizes implementation, PR delivery and deployment.
+The requested optional full-return point is explicitly tagged at PR #4,
+`6a234384097938caa5e668a5e8bb7ae5cd37161a`, as
+`rollback/aekr-web-pr4-approved-2026-09-05`; its Cloudflare version is
+`161fd91e-fa66-4090-a09f-b059127fe3d9`. No production rollback is implied by
+creating this recovery point. A separate verified bundle/tag preserves the
+immediate refinement base `c5307d6` and version
+`0bbe87d8-8f31-41b5-9500-cbbd16936479`.
+
+Before implementation, a separate UI/UX design review identified overlapping
+readable text during the simultaneous 420 ms fade and the missing persistent
+visual anchor. The selected approximately 900 ms sequence dissolves outgoing
+text first, reveals incoming text with a short, soft drift, and carries a subtle
+two-lobe mist pulse behind the content. The existing shader and starfield retain
+their own time and interaction. The official symbol travels continuously between
+measured hero and header positions; the enlarged header stays stable between
+the six content views. Reduced motion and deep-link initialization settle directly.
+
+Minimum sufficient change: reuse the current section controller, native Web
+Animations, existing artwork and atmosphere container. Scope excludes section
+copy, typography changes, form behavior, Worker, shader code and hosting changes.
+Standard browser animation/measurement facilities suffice; no library, renderer,
+router, public API, dependency or production configuration is introduced. Native
+cancellation handles interrupted navigation; viewport/preference changes settle
+the current destination. New branches must serve these observed motion and
+accessibility boundaries. Existing browser checks will extend to intermediate
+symbol positions, header docking, return travel, rapid navigation, reduced motion,
+and narrow enlarged-text layouts. A separate reviewer checks the final experience.
+
+Implementation result: the existing controller now owns a cancellable sequence,
+a single visible symbol traveler and a temporary mist pulse; no continuous loop
+or new runtime dependency is added. One header home anchor, scoped styling and
+focused browser regressions complete the five-file change with this guide. The
+source section markup, official artwork, atmosphere/contact script, Worker and
+hosting configuration remain byte-identical. Project Map topology is unchanged.
+Generation-bound completion prevents an interrupted animation from settling a
+newer destination. The symbol/header use gradual acceleration and deceleration;
+text keeps a separate short dissolve and delayed reveal.
+
+Executed verification: repository/provenance checks and real Brave desktop/mobile
+tests pass for intermediate symbol positions, header growth and stable docking,
+return travel, sequential text/mist, rapid reversal, history, keyboard, touch,
+form-draft preservation, resize and preference changes, reduced motion and the
+normal document fallback. Narrow 320-pixel layouts at 200% text pass both final
+bounds and intermediate Contact hit-testing. Separate UI/UX review inspected
+intermediate frames and approved the refined experience. Review found and
+resolved a flash of unrevealed text during rapid navigation and temporary clipping
+of enlarged header controls. Current visual state is retained when restarting a
+dissolve, and controls remain visible as the header grows. No unresolved blocking
+or minimality finding remains. The changed-output manifest and separate technical
+and visual receipts are kept with the verified recovery bundle; deployment still
+requires exact merged-commit checks and live source readback.
 
 ## Section navigation increment — 2026-09-05
 

@@ -44,7 +44,8 @@ async function open(options = {}, hash = '') {
 }
 async function active(page, id) {
   await page.waitForFunction(id => document.querySelector('main').dataset.activeSection === id, id);
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => document.querySelector('main').dataset.transitioning !== 'true');
+  await page.waitForTimeout(60);
   const state = await page.evaluate(() => {
     const panels = [...document.querySelectorAll('.section-panel')];
     return { visible: panels.filter(p => p.classList.contains('is-active')).length,
@@ -73,7 +74,8 @@ async function geometry(page) {
       contentWidth: document.querySelector('.section-panel.is-active').scrollWidth,
       footer: { top: f.top, bottom: f.bottom }, headerBottom: h.bottom,
       scrollbar: getComputedStyle(document.querySelector('.section-panel.is-active')).scrollbarWidth,
-      controls: [...document.querySelectorAll('.wordmark, .header-cta, .section-nav a')].map(el => {
+      controls: [...document.querySelectorAll('.wordmark, .header-cta, .section-nav a, .brand-dock')]
+        .filter(el => getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).display !== 'none').map(el => {
         const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       }),
       copyright: document.querySelector('.footer-legal').textContent.trim() };
@@ -90,9 +92,59 @@ async function geometry(page) {
   assert.equal(result.scrollbar, 'none'); assert.equal(result.copyright, '© 2026');
 }
 
+async function brandFrame(page) {
+  return page.evaluate(() => {
+    const box = el => {
+      const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+      return { x: r.x, y: r.y, width: r.width, height: r.height, cx: r.x + r.width / 2,
+        cy: r.y + r.height / 2, opacity: Number(s.opacity), visible: el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
+    };
+    return { hero: box(document.querySelector('.hero-mark')), traveler: box(document.querySelector('.brand-traveler')),
+      dock: box(document.querySelector('.brand-dock')), header: box(document.querySelector('.site-header')),
+      docked: document.documentElement.classList.contains('brand-docked'), width: innerWidth,
+      transitioning: document.querySelector('main').dataset.transitioning === 'true' };
+  });
+}
+
+async function brandJourney(page, label) {
+  await go(page, 'main');
+  const home = await brandFrame(page);
+  assert(home.hero.visible && !home.traveler.visible, 'Home presents one original symbol');
+  await page.locator('.section-nav a[href="#practice"]').click();
+  await page.waitForTimeout(180);
+  const moving = await brandFrame(page);
+  assert(moving.transitioning && moving.traveler.visible && !moving.hero.visible, 'One crisp symbol remains visible in flight');
+  assert(moving.traveler.opacity > .99, 'The traveling symbol does not fade');
+  assert(Math.abs(moving.traveler.cy - home.hero.cy) > 2, 'Symbol actually leaves its hero position');
+  if (shots) await page.screenshot({ path: path.join(shots, `${label}-outbound.png`) });
+  await active(page, 'practice');
+  const docked = await brandFrame(page);
+  assert(docked.docked && docked.traveler.visible && !docked.hero.visible);
+  assert(Math.abs(docked.traveler.cx - docked.width / 2) <= 1, 'Symbol docks at viewport center');
+  assert(Math.abs(docked.traveler.cy - docked.dock.cy) <= 1, 'Symbol meets the real header anchor');
+  assert(docked.header.height > home.header.height + 8, 'Header grows when leaving home');
+  await go(page, 'orchestration');
+  const stable = await brandFrame(page);
+  assert(Math.abs(stable.header.height - docked.header.height) <= 1, 'Header remains expanded between content views');
+  assert(Math.abs(stable.traveler.cy - docked.traveler.cy) <= 1, 'Docked symbol stays put between sections');
+  await page.locator('.brand-dock').click();
+  await page.waitForTimeout(180);
+  const returning = await brandFrame(page);
+  assert(returning.traveler.visible && returning.traveler.opacity > .99, 'Return journey keeps the symbol visible');
+  assert(Math.abs(returning.traveler.cy - stable.traveler.cy) > 2, 'Symbol actually travels back');
+  if (shots) await page.screenshot({ path: path.join(shots, `${label}-return.png`) });
+  await active(page, 'main');
+  const restored = await brandFrame(page);
+  assert(!restored.docked && restored.hero.visible && !restored.traveler.visible);
+  assert(Math.abs(restored.hero.cy - home.hero.cy) <= 1, 'Symbol returns above the original hero lettering');
+  assert(Math.abs(restored.header.height - home.header.height) <= 1, 'Original header height is restored');
+}
+
 try {
   const page = await open({ viewport: { width: 1440, height: 1000 } });
   await active(page, 'main'); await geometry(page);
+  await brandJourney(page, 'desktop-brand');
+  console.log('PASS: continuous official symbol travel, centered dock, stable enlarged header and return');
   if (process.env.BASELINE_REF && !process.env.SITE_URL) {
     const baseline = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/index.html`], { cwd: root, encoding: 'utf8' });
     const current = await readFile(path.join(root, 'public/index.html'), 'utf8');
@@ -109,9 +161,18 @@ try {
   await go(page, 'practice');
   await page.locator('.section-nav a[href="#orchestration"]').click();
   await page.waitForTimeout(100);
+  const early = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
+  const mistStart = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
+  assert(early < 0.1, 'Incoming text waits while the outgoing view dissolves');
+  await page.waitForTimeout(300);
   const fade = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
+  const mistPeak = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
+  assert(mistPeak.opacity > 0.1 && mistPeak.opacity > mistStart.opacity && mistPeak.transform !== mistStart.transform,
+    'Nebular mist moves and rises during the transition');
   assert(fade > 0 && fade < 1, 'Navigation actually fades the incoming view');
   await active(page, 'orchestration');
+  assert.equal(await page.locator('.atmosphere__transition').evaluate(el => Number(getComputedStyle(el).opacity)), 0,
+    'The temporary mist clears after the transition');
   console.log('PASS: six links, one visible/accessibile view, preserved content and fixed layout');
 
   await go(page, 'orchestration'); await edge(page, true);
@@ -146,8 +207,41 @@ try {
   await edge(page, false); await page.keyboard.press('PageUp'); await active(page, 'main');
   console.log('PASS: history, deep links, keyboard, form draft and failed-submit preservation');
 
+  await page.locator('.section-nav a[href="#practice"]').click();
+  await page.waitForTimeout(100);
+  const unrevealed = await page.locator('#practice').evaluate(el => Number(getComputedStyle(el).opacity));
+  await page.locator('.section-nav a[href="#orchestration"]').click({ force: true });
+  const interrupted = await page.locator('#practice').evaluate(el => Number(getComputedStyle(el).opacity));
+  assert(interrupted <= unrevealed + 0.05, 'Rapid navigation cannot flash text that has not appeared yet');
+  await active(page, 'orchestration');
+  await go(page, 'main');
+  await page.locator('.section-nav a[href="#practice"]').click();
+  await page.waitForTimeout(170);
+  const beforeReverse = await brandFrame(page);
+  // A user can activate a moving header control; skip Playwright's automatic
+  // geometry-stability wait so this actually interrupts the flight.
+  await page.locator('.wordmark').click({ force: true });
+  const afterReverse = await brandFrame(page);
+  assert(Math.abs(afterReverse.traveler.cy - beforeReverse.traveler.cy) < 40, 'Interrupted flight retargets without a position reset');
+  await active(page, 'main');
+  await page.locator('.section-nav a[href="#contact"]').click();
+  await page.waitForTimeout(120); await page.emulateMedia({ reducedMotion: 'reduce' });
+  await active(page, 'contact');
+  const stopped = await brandFrame(page);
+  assert(stopped.docked && !stopped.transitioning && stopped.traveler.visible);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await go(page, 'main');
+  await page.locator('.section-nav a[href="#engagements"]').click();
+  await page.waitForTimeout(100); await page.setViewportSize({ width: 1280, height: 800 });
+  await active(page, 'engagements'); await geometry(page);
+  const resized = await brandFrame(page);
+  assert(Math.abs(resized.traveler.cx - resized.width / 2) <= 1, 'Resize settles the symbol at the current destination');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  console.log('PASS: interrupted flight, preference change and viewport change preserve the current destination');
+
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
     const mobile = await open({ viewport, isMobile: true, hasTouch: true });
+    if (viewport.width === 390) await brandJourney(mobile, 'mobile-brand');
     for (const id of ids) {
       await go(mobile, id); await geometry(mobile);
       await edge(mobile, true);
@@ -180,13 +274,39 @@ try {
 
   const reduced = await open({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' }, '#why');
   await active(reduced, 'why');
+  const direct = await brandFrame(reduced);
+  assert(direct.docked && !direct.transitioning && direct.traveler.visible, 'Direct links initialize already docked');
   await reduced.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   await reduced.waitForTimeout(300); await geometry(reduced);
   await go(reduced, 'contact'); await geometry(reduced); await edge(reduced, true);
   const duration = await reduced.locator('.section-panel.is-active').evaluate(p => getComputedStyle(p).transitionDuration);
   assert(duration.split(',').every(d => parseFloat(d) <= 0.001), 'Reduced motion disables perceptible panel transitions');
   await reduced.setViewportSize({ width: 320, height: 568 });
-  for (const id of ids) { await go(reduced, id); await geometry(reduced); await edge(reduced, true); }
+  for (const id of ids) {
+    await go(reduced, id); await geometry(reduced); await edge(reduced, true);
+    if (id !== 'main') {
+      const frame = await brandFrame(reduced);
+      assert(Math.abs(frame.traveler.cx - frame.width / 2) <= 1);
+      const collides = await reduced.evaluate(() => {
+        const mark = document.querySelector('.brand-dock').getBoundingClientRect();
+        return [...document.querySelectorAll('.wordmark, .header-cta')].some(el => {
+          const r = el.getBoundingClientRect();
+          return Math.min(mark.right, r.right) > Math.max(mark.left, r.left) && Math.min(mark.bottom, r.bottom) > Math.max(mark.top, r.top);
+        });
+      });
+      assert(!collides, 'Enlarged text controls do not collide with the centered symbol');
+    }
+  }
+  await reduced.emulateMedia({ reducedMotion: 'no-preference' });
+  await go(reduced, 'main');
+  await reduced.locator('.section-nav a[href="#practice"]').click();
+  await reduced.waitForTimeout(80);
+  const contactUnclipped = await reduced.evaluate(() => {
+    const el = document.querySelector('.header-cta'), r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.bottom - 4)?.closest('.header-cta') === el;
+  });
+  assert(contactUnclipped, 'The enlarged Contact control remains visible and clickable while the header grows');
+  await active(reduced, 'practice');
   const fallback = await open({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   assert.equal(await fallback.locator('main > section:visible').count(), 7);
   assert.equal(await fallback.locator('html.sections-enabled').count(), 0);

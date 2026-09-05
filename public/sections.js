@@ -7,10 +7,13 @@
   const footer = document.querySelector('.site-footer');
   const navigation = document.querySelector('.section-nav');
   const status = document.querySelector('.section-status');
+  const heroMark = document.querySelector('.hero-mark');
+  const dock = document.querySelector('.brand-dock');
+  const atmosphere = document.querySelector('.atmosphere');
   const panels = Array.from(main?.querySelectorAll(':scope > section') || []);
   const links = Array.from(navigation?.querySelectorAll('a') || []);
-  if (!main || !header || !footer || !status || panels.length !== 7 || links.length !== 6) return;
-  if (typeof ResizeObserver !== 'function' || !('inert' in HTMLElement.prototype)) return;
+  if (!main || !header || !footer || !status || !heroMark || !dock || !atmosphere || panels.length !== 7 || links.length !== 6) return;
+  if (typeof ResizeObserver !== 'function' || !('inert' in HTMLElement.prototype) || !Element.prototype.animate) return;
 
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const editable = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
@@ -24,6 +27,18 @@
   let wheelScrolled = false;
   let keyConsumed = false;
   let touch = null;
+  let animationId = 0;
+  let animations = [];
+
+  const traveler = heroMark.cloneNode(false);
+  traveler.className = 'brand-traveler';
+  traveler.alt = '';
+  traveler.setAttribute('aria-hidden', 'true');
+  traveler.hidden = true;
+  document.body.append(traveler);
+  const mist = document.createElement('div');
+  mist.className = 'atmosphere__transition';
+  atmosphere.append(mist);
 
   const sectionName = index => index === 0 ? 'main' : panels[index].id;
   const canScroll = (panel, direction) => direction > 0
@@ -47,17 +62,105 @@
     root.style.setProperty('--section-footer-height', `${footer.getBoundingClientRect().height}px`);
   }
 
+  function fitHeader() {
+    const mark = dock.getBoundingClientRect();
+    const wordmark = header.querySelector('.wordmark').getBoundingClientRect();
+    const contact = header.querySelector('.header-cta').getBoundingClientRect();
+    root.classList.toggle('brand-header-wrapped', current !== 0 && (wordmark.right + 12 > mark.left || contact.left - 12 < mark.right));
+  }
+
+  function placeTraveler(rect) {
+    traveler.style.width = `${rect.width}px`;
+    traveler.style.height = `${rect.height}px`;
+    traveler.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+  }
+
+  function cancelMotion() {
+    animationId++;
+    animations.forEach(animation => animation.cancel());
+    animations = [];
+    panels.forEach(panel => panel.classList.remove('is-leaving'));
+    header.classList.remove('header-in-motion');
+    main.removeAttribute('data-transitioning');
+    transitionUntil = 0;
+  }
+
+  function settleMotion() {
+    cancelMotion();
+    fitHeader();
+    measureViewport();
+    placeTraveler(current === 0 ? heroMark.getBoundingClientRect() : dock.getBoundingClientRect());
+    traveler.hidden = current === 0;
+    heroMark.classList.toggle('hero-mark--traveling', current !== 0);
+  }
+
+  function animateChange(outgoing, incoming, outgoingStart, markStart, headerStart, direction) {
+    const duration = 900;
+    const easing = 'cubic-bezier(0.22, 0.75, 0.2, 1)';
+    const travelEasing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const target = current === 0 ? heroMark.getBoundingClientRect() : dock.getBoundingClientRect();
+    const headerEnd = header.getBoundingClientRect().height;
+    const run = animationId;
+    main.dataset.transitioning = 'true';
+    transitionUntil = performance.now() + duration;
+    outgoing.classList.add('is-leaving');
+    animations.push(outgoing.animate([
+      outgoingStart,
+      { opacity: 0, filter: 'blur(3px)', transform: `translateY(${-direction * 10}px)` }
+    ], { duration: 240, easing, fill: 'forwards' }));
+    animations.push(incoming.animate([
+      { opacity: 0, filter: 'blur(4px)', transform: `translateY(${direction * 10}px)` },
+      { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0px)' }
+    ], { delay: 260, duration: 520, easing, fill: 'both' }));
+    animations.push(mist.animate([
+      { opacity: 0, transform: 'translate(-3%, 2%) scale(0.96)', offset: 0 },
+      { opacity: 0.6, transform: 'translate(0%, 0%) scale(1.02)', offset: 0.38 },
+      { opacity: 0, transform: 'translate(4%, -3%) scale(1.08)', offset: 1 }
+    ], { duration, easing: 'ease-in-out' }));
+
+    heroMark.classList.add('hero-mark--traveling');
+    traveler.hidden = false;
+    placeTraveler(target);
+    animations.push(traveler.animate([
+      { transform: `translate(${markStart.left}px, ${markStart.top}px) scale(${markStart.width / target.width})` },
+      { transform: `translate(${target.left}px, ${target.top}px) scale(1)` }
+    ], { duration, easing: travelEasing, fill: 'both' }));
+    if (Math.abs(headerStart - headerEnd) > 1) {
+      header.classList.add('header-in-motion');
+      animations.push(header.animate([
+        { height: `${headerStart}px` }, { height: `${headerEnd}px` }
+      ], { duration, easing: travelEasing, fill: 'both' }));
+    }
+    Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+      if (run === animationId) settleMotion();
+    });
+  }
+
   function show(index, { history = true, focus = false, end = false, initial = false } = {}) {
     if (index < 0 || index >= panels.length) return false;
     const outgoing = panels[current];
     const incoming = panels[index];
     const changed = index !== current;
     const moveFocus = focus || (changed && outgoing.contains(document.activeElement));
+    if (!changed && !initial) {
+      incoming.scrollTop = 0;
+      if (focus) incoming.focus({ preventScroll: true });
+      return false;
+    }
+    const markStart = (traveler.hidden ? heroMark : traveler).getBoundingClientRect();
+    const headerStart = header.getBoundingClientRect().height;
+    const style = getComputedStyle(outgoing);
+    const outgoingStart = { opacity: style.opacity, filter: style.filter, transform: style.transform };
+    const direction = index > current ? 1 : -1;
+    cancelMotion();
     current = index;
+    root.classList.toggle('brand-docked', index !== 0);
+    fitHeader();
+    measureViewport();
     incoming.inert = false;
     incoming.setAttribute('aria-hidden', 'false');
     incoming.classList.add('is-active');
-    incoming.scrollTop = end ? incoming.scrollHeight : 0;
+    incoming.scrollTop = end && index !== 0 ? incoming.scrollHeight : 0;
     if (moveFocus) incoming.focus({ preventScroll: true });
     for (const panel of panels) {
       if (panel === incoming) continue;
@@ -75,8 +178,9 @@
     }
     if (!initial) {
       status.textContent = index === 0 ? 'AEKR — introduction.' : `${links[index - 1].textContent.trim()}. Section ${index} of 6.`;
-      if (changed) transitionUntil = performance.now() + (motion.matches ? 0 : 420);
     }
+    if (changed && !initial && !motion.matches) animateChange(outgoing, incoming, outgoingStart, markStart, headerStart, direction);
+    else settleMotion();
     return changed;
   }
 
@@ -91,12 +195,17 @@
   window.history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
 
-  const observer = new ResizeObserver(measureViewport);
+  const observer = new ResizeObserver(() => {
+    fitHeader();
+    measureViewport();
+    if (!animations.length && current !== 0) placeTraveler(dock.getBoundingClientRect());
+  });
   observer.observe(header);
   observer.observe(footer);
-  window.addEventListener('resize', measureViewport, { passive: true });
-  window.visualViewport?.addEventListener('resize', measureViewport, { passive: true });
+  window.addEventListener('resize', settleMotion, { passive: true });
+  window.visualViewport?.addEventListener('resize', settleMotion, { passive: true });
   window.visualViewport?.addEventListener('scroll', measureViewport, { passive: true });
+  motion.addEventListener('change', settleMotion);
 
   document.addEventListener('click', event => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
