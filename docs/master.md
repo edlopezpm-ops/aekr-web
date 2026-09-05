@@ -171,3 +171,16 @@ See [the 2026-09-04 verification record](verification-2026-09-04.md) for scope,
 review, executed checks and the previous Cloudflare version. The delivery
 commit's GitHub Workers Builds check records its production build and version;
 verify current live responses before treating a historical record as current.
+
+### Footer banner edges — 2026-09-05
+
+Ed requested softer edges only on the footer's Build with AEKR banner. Its frame
+is rasterized into the existing artwork. The minimum sufficient change reuses
+the scoped `.provenance img` rule: two intersected gradient masks fade the four
+edges while preserving the center, dimensions, opacity and original asset.
+No new dependency, component, configuration or runtime behavior is introduced.
+Before/after Brave screenshots at 1440 and 390 pixels confirm softer edges,
+legible lettering, identical bounds and no overflow or page errors. Focused
+visual verification covers this reversible styling change; existing repository
+checks and separate-author review apply. Recovery source is `9c22cbd`; its
+Cloudflare version is `fed566d3-bd78-40f9-bbab-6ff339e781e9`.
