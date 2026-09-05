@@ -1,11 +1,100 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; organic motion and selectable English/Spanish refinement.
+**Status:** Existing public website; restrained phrase transitions and EN/SP toggle refinement.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
 
-## Organic motion and language selection — 2026-09-05
+## Quiet motion and EN/SP toggle — 2026-09-05
+
+Ed rejected the particle treatment after viewing PR #12 and authorized restoring
+the previous bitmap logo journey, replacing phrase particles with a researched,
+restrained transition, and using one EN/SP language button without a dropdown.
+Standing full commit, push, PR, kommiBo review by edfortheblind, merge and live
+deployment authorization applies. Base is PR #12 merge `68426a7`; the verified
+bundle and `rollback/aekr-web-pre-quiet-motion-2026-09-05` preserve it. The exact
+PR #4 and pre-PR #12 rollback references remain intact.
+
+Before implementation: the unwanted effect lives in two Canvas implementations
+inside the existing section script. The approved bitmap traveler is recoverable
+from `75865df`; WAAPI, DOM phrase cells, pause state, locale events and static
+fallbacks already cover the replacement. The language boundary already owns
+translation and explicit preference storage; only its input control changes.
+The smallest coherent change removes both particle engines, restores the bitmap
+journey within the current 1500 ms section envelope, and transitions whole phrase
+nodes with opacity and a small vertical displacement. The initial phrase is
+immediately readable. Each phrase holds fully still for 3000 ms, exits in 240 ms
+(0 to -2 px), then the next enters in 400 ms (+4 to 0 px). Text never overlaps.
+These timings are a project design choice informed by [Carbon motion guidance](https://carbondesignsystem.com/elements/motion/overview/),
+using its productive entrance/exit curves. Pause and static alternatives retain
+the [W3C pause guidance](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html).
+
+Minimum Sufficient Change ladder: exclude nebula, section content, brand artwork,
+backend, contact delivery and infrastructure changes. Reuse the existing bitmap,
+DOM grid, navigation state and browser animation API; remove samplers, Canvas
+buffers, particle resource caps and RAF schedulers instead of leaving dormant
+effects. No animation dependency, new router, API, configuration key or operating
+surface is necessary. Keep current spacing, mobile geometry and softer section
+transitions. A native button shows the active language as EN/SP, toggles en/es
+with click or keyboard, and names both the language and next action accessibly.
+English remains the default without an explicit stored selection. Existing
+translation, storage failure and contact draft/status behavior are preserved.
+
+Expected surface: section script/styles, language control, browser regression
+tests and this guide. Verification covers actual bitmap movement, whole-line
+opacity/position, stationary three-second reading, pause and interruption,
+language persistence and keyboard use, both languages in responsive layouts,
+reduced motion, static fallbacks and the unchanged contact/atmosphere boundary.
+The design author and runtime implementer are separate. The test author reviews
+runtime; the orchestrator separately reviews the test diff. These shared-context
+reviews are not independent-context audits. Final inventory and observed evidence
+are recorded after implementation below; no success is inferred from this plan.
+
+Implementation result: the official bitmap uses its original `75865df` movement
+and easing with the current 1500 ms coordination. Both particle renderers and
+their sampling, drawing, resource and failure machinery are deleted. The hero
+uses one native whole-line animation or one reading timer; identity-checked
+completion handlers cannot replace a phrase after cancellation. Pause, locale,
+viewport and visibility changes settle to readable text. Reduced motion or
+missing animation capability retains the existing static introduction. The
+seven phrases, approved spacing, softer section transitions, typography, content,
+nebula and contact code remain unchanged.
+
+One 44 px EN/SP button replaces the label/select/options. Its accessible name
+contains the visible code, current language and next action. Native Enter/Space,
+explicit preference storage and the existing header/compact-menu placement are
+reused. No translation API, route, configuration or dependency is introduced.
+The Project Map already describes these same components accurately; no new
+component or map projection is needed.
+
+Inventory: section script +58/-445, styles +4/-24, language script +10/-19,
+browser tests +143/-195 and this guide. Section script length falls from 914 to
+527 lines; named functions from 28 to 19, Canvas creation sites from four to zero
+and RAF requests from three to zero. These are descriptive counts, not a
+cyclomatic or cognitive score. The one timer and existing state boundaries
+remain; no parallel scheduler or renderer is retained. The deliberate
+simplification is active for this quiet-motion work item, owned by Ed/HOC:
+whole-line transitions are the supported visual ceiling. Reconsider only on an
+explicit new visual requirement; use the existing browser animation boundary
+before proposing another renderer. No unresolved minimality finding remains.
+
+Repository checks and the implementer's real-Brave smoke pass. Observed reading
+lasted 3006 ms; whole-line frames had fractional opacity and 2–4 px bounded
+movement without blur. Separate visual review passes desktop, mobile, landscape
+and 200% text, including EN/SP and both bitmap directions. The technical reviewer
+authored the updated tests but not the runtime; the orchestrator separately
+reviewed that test diff. The initial browser run passed motion, navigation,
+responsive layout and contact groups before a fixture race: it checked mobile
+links before the emulated breakpoint event had finished. Two state-based waits
+correct that fixture without changing runtime. The unchanged remaining language,
+fallback and reduced-motion groups passed in a bound continuation; this is
+combined coverage, not a claim that the original full command exited zero.
+Immutable receipt binding precedes the already-authorized Git/provider delivery.
+Evidence is stored with the external recovery bundle. Browser evidence uses actual Brave with
+mobile emulation, not physical Safari; visibility events are synthetic and all
+email requests are intercepted.
+
+## Organic motion and language selection — 2026-09-05 (superseded motion/control)
 
 Ed requested a wider, subtler and varying particle cloud; moving the fixed
 “Humans orchestrate. Machines execute.” line into that loop; more breathing
