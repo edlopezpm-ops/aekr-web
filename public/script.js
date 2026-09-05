@@ -606,14 +606,19 @@
 
   const form = document.getElementById("contact-form");
   const status = document.getElementById("form-status");
-  if (!form || !status) return;
+  const thanks = document.getElementById("contact-thanks");
+  const main = document.getElementById("main");
+  if (!form || !status || !thanks) return;
 
   const emailField = form.elements.email;
   const buttons = Array.from(form.querySelectorAll("button[type=submit]"));
   const ENDPOINT = form.getAttribute("action") || "/api/contact";
 
   let submitting = false;
+  let completed = false;
   let lastClicked = null;
+  let inContact = main?.dataset.activeSection === "contact";
+  let visit = inContact ? 1 : 0;
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -630,16 +635,42 @@
   function setBusy(isBusy, activeButton) {
     submitting = isBusy;
     buttons.forEach((button) => {
-      button.disabled = isBusy;
+      button.disabled = isBusy || completed;
     });
     if (activeButton) {
       activeButton.setAttribute("aria-busy", isBusy ? "true" : "false");
     }
   }
 
+  function syncContactVisit(records = navigationObserver?.takeRecords() || []) {
+    records.forEach((record, index) => {
+      // A complete leave/re-entry can occur in one observer batch.
+      const section = index + 1 < records.length ? records[index + 1].oldValue : main.dataset.activeSection;
+      const entering = section === "contact" && !inContact;
+      inContact = section === "contact";
+      if (!entering) return;
+      visit++;
+      if (!completed) return;
+      completed = false;
+      form.hidden = false;
+      thanks.hidden = true;
+      lastClicked = null;
+      setStatus("");
+      setBusy(submitting);
+    });
+  }
+
+  const navigationObserver = main ? new MutationObserver(syncContactVisit) : null;
+  navigationObserver?.observe(main, {
+    attributes: true,
+    attributeFilter: ["data-active-section"],
+    attributeOldValue: true,
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (submitting) return;
+    syncContactVisit();
+    if (submitting || completed) return;
 
     const trigger = event.submitter || lastClicked || buttons[0];
     const requestType = trigger && trigger.dataset.requestType === "pricing" ? "pricing" : "contact";
@@ -658,6 +689,7 @@
 
     setBusy(true, trigger);
     setStatus("Sending…");
+    const requestVisit = visit;
 
     try {
       const response = await fetch(ENDPOINT, {
@@ -668,21 +700,27 @@
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const result = await response.json().catch(() => ({}));
-      if (result && result.ok === false) throw new Error("rejected");
+      const result = await response.json();
+      if (result?.ok !== true) throw new Error("rejected");
 
+      syncContactVisit();
+      if (requestVisit !== visit) return;
+      completed = true;
       form.reset();
-      setStatus(
-        requestType === "pricing"
-          ? "Request received. We'll send the AEKR engagement structure to your email."
-          : "Message received. We'll get back to you at that address.",
-        "success"
-      );
+      setStatus("");
+      form.hidden = true;
+      thanks.hidden = false;
+      if (inContact || !main?.dataset.activeSection) {
+        thanks.focus({ preventScroll: true });
+        thanks.scrollIntoView({ block: "start", behavior: "instant" });
+      }
     } catch (error) {
       // The comment is deliberately left in place so nothing typed is lost.
-      setStatus("We couldn't send your request. Please try again.", "error");
+      syncContactVisit();
+      if (requestVisit === visit) setStatus("We couldn't send your request. Please try again.", "error");
     } finally {
       setBusy(false, trigger);
+      if (requestVisit !== visit) setStatus("");
     }
   });
 })();
