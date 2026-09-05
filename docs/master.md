@@ -119,6 +119,27 @@ An unmodified upstream generated-project PASS is therefore not claimed. Local
 Root `assets/` contains the canonical README/map provenance banner and license;
 `public/assets/` keeps the existing transparency-adjusted website artwork.
 
+### Approved README banner update — 2026-09-05
+
+Ed approved distributing the accepted soft-edge banner after reviewing the
+accreatio pilot. The minimum change reuses AEKR's exact approved PNG at the
+existing README and Project Map asset path. Website artwork, master logos,
+README prose, runtime code and dependencies remain outside this increment.
+The source SHA-256 is
+`81a60d8e3d28b2e0934cecd22c703af20e2bddd164f68a0888193647c1b816fc`.
+
+The generated-project validator previously required the old banner digest, so
+its banner constant, self-integrity digest and local provenance pins change
+together. The historical upstream source stays pinned to the same commit.
+Provenance reconstruction additionally reverses this one declared banner-digest
+substitution; the five insertion blocks and three branding substitutions remain
+unchanged. No check is removed and an altered asset must still be rejected.
+This adds no runtime, dependency, public interface or configuration surface.
+Verification covers exact source bytes, PNG decoding, existing reference
+resolution, the existing repository checks and rejection of altered bytes.
+The existing `npm run check` passed; both the provenance check and generated-project
+validator rejected a one-byte-altered banner. The approved bytes were restored.
+
 Local implementation result: seeded the portable core, initialized switchboard,
 owner profile and scaffold metadata; added the three-view map, provenance assets,
 local checks and validation-only CI; refreshed README and this operating guide.
