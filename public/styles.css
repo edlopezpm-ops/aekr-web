@@ -976,8 +976,35 @@ main {
    Section navigation — enabled only after the controller is ready
    ========================================================================== */
 
-.section-nav {
+.section-nav,
+.brand-dock {
   display: none;
+}
+
+.brand-traveler {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 15;
+  max-width: none;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.brand-traveler[hidden] {
+  display: none;
+}
+
+.atmosphere__transition {
+  z-index: 3;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 42% 32% at 25% 68%, color-mix(in srgb, var(--nebula-mint) 34%, transparent), transparent 72%),
+    radial-gradient(ellipse 38% 46% at 74% 26%, color-mix(in srgb, var(--nebula-steel) 32%, transparent), transparent 74%);
+  filter: blur(30px);
 }
 
 .sections-enabled,
@@ -991,6 +1018,37 @@ main {
 .sections-enabled .site-header {
   position: fixed;
   inset: var(--section-viewport-top, 0px) 0 auto;
+  min-height: 76px;
+  border: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 82%, transparent), color-mix(in srgb, var(--bg) 64%, transparent) 72%, transparent);
+}
+
+.sections-enabled.brand-docked .site-header {
+  min-height: 112px;
+}
+
+.sections-enabled .brand-dock {
+  display: block;
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  transform: translateX(-50%);
+  visibility: hidden;
+}
+
+.sections-enabled.brand-docked .brand-dock {
+  visibility: visible;
+}
+
+.sections-enabled.brand-header-wrapped .site-header {
+  padding-top: 108px;
+}
+
+.sections-enabled .site-header.header-in-motion,
+.sections-enabled.brand-docked .site-header.header-in-motion {
+  min-height: 0;
 }
 
 .sections-enabled .site-nav {
@@ -1029,7 +1087,6 @@ main {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 420ms var(--ease-standard), visibility 0s 420ms;
 }
 
 .sections-enabled .section-panel::-webkit-scrollbar,
@@ -1041,7 +1098,10 @@ main {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transition: opacity 420ms var(--ease-standard), visibility 0s;
+}
+
+.sections-enabled .section-panel.is-leaving {
+  visibility: visible;
 }
 
 .sections-enabled .section {
@@ -1068,6 +1128,10 @@ main {
 .sections-enabled .hero-mark {
   width: clamp(90px, 15vh, 138px);
   margin-bottom: 1.25rem;
+}
+
+.sections-enabled .hero-mark--traveling {
+  visibility: hidden;
 }
 
 .sections-enabled .hero .eyebrow,
@@ -1209,6 +1273,21 @@ main {
   .sections-enabled .site-header {
     gap: 12px;
     padding: 0.5rem 20px;
+    min-height: 60px;
+  }
+
+  .sections-enabled.brand-docked .site-header {
+    min-height: 92px;
+  }
+
+  .sections-enabled .brand-dock {
+    top: 14px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .sections-enabled.brand-header-wrapped .site-header {
+    padding-top: 90px;
   }
 
   .sections-enabled .wordmark {
