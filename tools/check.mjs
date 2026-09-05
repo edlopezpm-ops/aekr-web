@@ -37,9 +37,15 @@ function checkProvenance() {
   const brandingPhrase = 'AI Engineering Knowledge Racking';
   assert.equal(local.split(brandingPhrase).length - 1, 3, 'Branding variance must have exactly three substitutions');
   const projectionPattern = /(export const VALIDATOR_PROJECTION_SHA256 =\s*\n\s*")[A-F0-9]{64}(";)/;
+  const bannerPattern = /(const BRANDING_BANNER_SHA256 =\s*\n\s*")([A-F0-9]{64})(";)/g;
+  const bannerMatches = [...local.matchAll(bannerPattern)];
+  assert.equal(bannerMatches.length, 1, 'Banner variance must contain exactly one digest substitution');
+  assert.equal(bannerMatches[0][2], provenance.local_sha256['assets/aekr-banner.png'].toUpperCase(),
+    'The validator must require the exact pinned approved banner');
   const varianceBlock = /^[ \t]*\/\/ AEKR-WEB-VARIANCE-START ([a-z-]+)\n[\s\S]*?^[ \t]*\/\/ AEKR-WEB-VARIANCE-END \1\n\n?/gm;
   assert.equal([...local.matchAll(varianceBlock)].length, 5, 'Web-project variance must contain exactly five declared insertions');
   const reconstructed = local.replace(varianceBlock, '').replaceAll(brandingPhrase, 'AI Engineering Knowledge Repo')
+    .replace(bannerPattern, `$1${provenance.upstream_banner_sha256}$3`)
     .replace(projectionPattern, `$1${provenance.upstream_projection_sha256}$2`);
   assert.equal(sha256(reconstructed), provenance.upstream_generated_validator_sha256,
     'The declared branding and public URL variance must reconstruct the exact upstream validator');
