@@ -184,3 +184,18 @@ legible lettering, identical bounds and no overflow or page errors. Focused
 visual verification covers this reversible styling change; existing repository
 checks and separate-author review apply. Recovery source is `9c22cbd`; its
 Cloudflare version is `fed566d3-bd78-40f9-bbab-6ff339e781e9`.
+
+### Footer simplification — 2026-09-05
+
+Ed's latest instruction replaces the footer's three brand/tagline rows with
+only the existing banner and the exact copyright `© 2026`. The banner's outer
+frame must disappear. Reuse the footer markup and mask rule, remove obsolete
+footer-only styling and its former lead-in gap, and hold the raster frame fully
+transparent before fading into the artwork. Header, main content, source image,
+animation, forms and hosting configuration stay unchanged. No new dependency,
+component or contract is needed. Focused desktop/mobile visual verification and
+separate-author review apply. Recovery source is `287a693`; its Cloudflare
+version is `1e2ebc45-896b-403e-99ea-ebc0513b06c0`.
+Brave verification passed at 1440 and 390 pixels: only the banner and copyright
+remain, its frame is hidden, original image size/opacity are retained, and no
+overflow or page errors occur. Existing repository checks also passed.

@@ -259,8 +259,7 @@ p {
   }
 
   .wordmark .visually-hidden,
-  .hero-title .visually-hidden,
-  .footer-brand .visually-hidden {
+  .hero-title .visually-hidden {
     position: static;
     width: auto;
     height: auto;
@@ -269,8 +268,7 @@ p {
     clip-path: none;
   }
 
-  .wordmark,
-  .footer-brand {
+  .wordmark {
     font-weight: 600;
     letter-spacing: 0.2em;
   }
@@ -853,32 +851,13 @@ main {
   margin: 0.25rem 0;
 }
 
-.site-footer .footer-brand {
-  width: 7rem;
-  max-width: 100%;
-  margin: 0.25rem auto;
-}
-
-.footer-expansion {
-  color: var(--fg-faint);
-  font-size: 0.82rem;
-}
-
-.footer-line {
-  margin-top: var(--space-2) !important;
-}
-
-.provenance {
-  margin-top: var(--space-4) !important;
-}
-
 .provenance img {
   width: clamp(200px, 42vw, 320px);
   height: auto;
   opacity: 0.85;
   mask-image:
-    linear-gradient(to right, transparent, #000 4%, #000 96%, transparent),
-    linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+    linear-gradient(to right, transparent 1.5%, #000 5%, #000 95%, transparent 98.5%),
+    linear-gradient(to bottom, transparent 3%, #000 10%, #000 90%, transparent 97%);
   mask-composite: intersect;
 }
 
