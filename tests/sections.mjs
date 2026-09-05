@@ -31,9 +31,10 @@ const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_
 const errors = [];
 const shots = process.env.SCREENSHOT_DIR;
 if (shots) await mkdir(shots, { recursive: true });
-async function open(options = {}, hash = '', sources = {}) {
+async function open(options = {}, hash = '', sources = {}, setup) {
   const context = await browser.newContext(options);
   const page = await context.newPage();
+  if (setup) await page.addInitScript(setup);
   page.on('pageerror', e => errors.push(e.message));
   // Never deliver real email, including when SITE_URL points at production.
   await page.route('**/*', route => {
@@ -170,11 +171,10 @@ try {
       sources[file] = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/${file}`], { cwd: root, encoding: 'utf8' });
     }
     const currentScript = await readFile(path.join(root, 'public/script.js'), 'utf8');
-    const contactBoundary = '   Contact form.';
-    assert.equal(currentScript.split(contactBoundary)[0], sources['script.js'].split(contactBoundary)[0],
-      'The atmosphere renderer and header script remain byte-identical');
+    assert.equal(currentScript, sources['script.js'],
+      'The atmosphere, header and contact script remain byte-identical');
     const currentSections = await readFile(path.join(root, 'public/sections.js'), 'utf8');
-    assert.equal(currentSections.split('/* Hero storytelling')[0].trim(), sources['sections.js'].trim(),
+    assert.equal(currentSections.split('/* Hero storytelling')[0].trim(), sources['sections.js'].split('/* Hero storytelling')[0].trim(),
       'The approved section and symbol transition controller remains byte-identical');
     const oldPage = await open({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' }, '', sources);
     const identitySizes = p => p.evaluate(() => ({
@@ -185,59 +185,157 @@ try {
     }));
     const originalSizes = await identitySizes(oldPage), updatedSizes = await identitySizes(page);
     for (const key of Object.keys(originalSizes)) {
-      assert(Math.abs(updatedSizes[key] / originalSizes[key] - 1.15) < .001, `${key} is 15% larger`);
+      assert(Math.abs(updatedSizes[key] - originalSizes[key]) < .01, `${key} retains its approved size`);
     }
     await go(oldPage, 'lifecycle'); await go(page, 'lifecycle');
     const lifecycleSize = p => p.evaluate(() => {
       const list = document.querySelector('.lifecycle').getBoundingClientRect();
       const layer = document.querySelector('.lifecycle-layer').getBoundingClientRect();
-      return { height: Math.max(list.bottom, layer.bottom) - Math.min(list.top, layer.top),
-        aside: layer.left >= list.right && layer.height > layer.width };
+      return { width: layer.width, height: layer.height, aside: layer.left >= list.right,
+        centerOffset: Math.abs((layer.top + layer.bottom - list.top - list.bottom) / 2),
+        fits: layer.top >= list.top && layer.bottom <= list.bottom };
     });
     const oldLifecycle = await lifecycleSize(oldPage), newLifecycle = await lifecycleSize(page);
-    assert(newLifecycle.aside, 'Interferometry is a tall right-hand panel');
-    assert(newLifecycle.height < oldLifecycle.height, 'The lifecycle is shorter than the approved baseline');
-    console.log('PASS: 15% hero identity scale, unchanged boundaries and shorter lifecycle', { originalSizes, updatedSizes, oldLifecycle, newLifecycle });
+    assert(newLifecycle.aside && newLifecycle.fits && newLifecycle.centerOffset < 1, 'Interferometry is centered beside the stages');
+    assert(newLifecycle.width > oldLifecycle.width && newLifecycle.height < oldLifecycle.height, 'Interferometry is wider and shorter');
+    const gaps = p => p.evaluate(() => ['.hero-story', '.hero-tagline'].map(selector => parseFloat(getComputedStyle(document.querySelector(selector)).marginTop)));
+    const oldGaps = await gaps(oldPage), newGaps = await gaps(page);
+    assert(newGaps.every((gap, i) => gap > oldGaps[i]), 'Both sides of the phrase have more breathing room');
+    assert.equal((await page.locator('.contact-home').textContent()).trim(), 'Back');
+    console.log('PASS: preserved identity and approved boundaries; wider/shorter card, increased spacing and Back', { oldLifecycle, newLifecycle });
     await oldPage.context().close();
   }
-  const heroPage = await open({ viewport: { width: 1440, height: 1000 } });
+  const heroPage = await open({ viewport: { width: 1440, height: 1000 } }, '', {}, () => {
+    window.heroEvidence = { draws: 0, phases: [] };
+    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.classList.contains('hero-particles')) window.heroEvidence.draws++;
+      return clear.apply(this, args);
+    };
+    new MutationObserver(records => {
+      for (const record of records) {
+        if (record.target.matches?.('.hero-story') && record.attributeName === 'data-phase') {
+          window.heroEvidence.phases.push({ phase: record.target.dataset.phase, at: performance.now() });
+        }
+      }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-phase'] });
+  });
+  const phase = (p, value) => p.waitForFunction(value => document.querySelector('.hero-story').dataset.phase === value, value);
   const phraseState = p => p.evaluate(() => {
     const current = document.querySelector('.hero-phrase.is-current');
     const rect = document.querySelector('.hero-story').getBoundingClientRect();
     const style = getComputedStyle(current);
-    return { text: current.textContent, opacity: Number(style.opacity), transform: style.transform,
+    return { text: current.textContent, opacity: Number(style.opacity), transform: style.transform, filter: style.filter,
       height: rect.height, top: rect.top,
       visible: [...document.querySelectorAll('.hero-phrase')].filter(el => getComputedStyle(el).visibility === 'visible').length };
   });
-  await heroPage.waitForTimeout(1200);
+  const particlePixels = p => p.locator('.hero-particles').evaluate(canvas => {
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    let count = 0, signature = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 32) { count++; signature = (signature + i * data[i]) % 1000000007; }
+    }
+    return { count, signature, hidden: canvas.hidden };
+  });
+  await phase(heroPage, 'forming'); await heroPage.waitForTimeout(150);
+  const cloud = await particlePixels(heroPage);
+  const particleCount = Number(await heroPage.locator('.hero-story').getAttribute('data-particle-count'));
+  assert(particleCount > 100 && particleCount <= 1600, 'A bounded cloud uses real glyph samples');
+  await heroPage.waitForTimeout(350);
+  const forming = await particlePixels(heroPage);
+  assert(cloud.count > 100 && forming.count > 100 && cloud.signature !== forming.signature, 'Actual particle pixels move while forming');
+  assert.equal((await phraseState(heroPage)).visible, 0, 'Particles supply the forming text');
+  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-particles-forming.png') });
+  await phase(heroPage, 'dwell');
   const readable = await phraseState(heroPage);
   assert.equal(readable.visible, 1); assert.equal(readable.opacity, 1);
-  await heroPage.waitForTimeout(700);
-  assert.notEqual((await phraseState(heroPage)).transform, readable.transform, 'The readable phrase gently floats');
-  await heroPage.waitForFunction(text => document.querySelector('.hero-phrase.is-current').textContent !== text, readable.text);
-  const nextPhrase = await phraseState(heroPage);
-  assert.equal(nextPhrase.visible, 1); assert(nextPhrase.opacity < .5, 'The next phrase condenses from a soft dissolve');
-  assert.equal(nextPhrase.height, readable.height); assert.equal(nextPhrase.top, readable.top);
+  assert.equal(readable.transform, 'none'); assert.equal(readable.filter, 'none');
+  assert.equal((await particlePixels(heroPage)).count, 0, 'The canvas clears for crisp DOM reading');
+  const drawCount = await heroPage.evaluate(() => window.heroEvidence.draws);
+  await heroPage.waitForTimeout(1000);
+  assert.deepEqual(await phraseState(heroPage), readable, 'The phrase is completely stationary during reading');
+  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), drawCount, 'No hero canvas draws during reading');
+  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-particles-dwell.png') });
+  await phase(heroPage, 'dispersing');
+  const dwellDuration = await heroPage.evaluate(() => {
+    const phases = window.heroEvidence.phases;
+    const end = phases.findIndex(p => p.phase === 'dispersing');
+    const start = phases.slice(0, end).findLast(p => p.phase === 'dwell');
+    return phases[end].at - start.at;
+  });
+  assert(dwellDuration >= 2990 && dwellDuration < 3300, `Static reading lasts three seconds: ${dwellDuration} ms`);
+  assert((await particlePixels(heroPage)).count > 100, 'The phrase breaks back into particles');
+  await phase(heroPage, 'forming');
+  assert.notEqual((await phraseState(heroPage)).text, readable.text, 'The cloud reforms into a new phrase');
+  await phase(heroPage, 'dwell');
+  assert.equal((await phraseState(heroPage)).height, readable.height, 'The loop reserves stable layout height');
   await heroPage.locator('.hero-pause').click();
-  const pausedPhrase = await phraseState(heroPage);
-  await heroPage.waitForTimeout(400);
-  assert.deepEqual(await phraseState(heroPage), pausedPhrase, 'Pause holds one crisp phrase without layout movement');
-  assert.equal(pausedPhrase.opacity, 1);
+  const pausedPhrase = await phraseState(heroPage), pausedDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
+  await heroPage.waitForTimeout(450);
+  assert.deepEqual(await phraseState(heroPage), pausedPhrase);
+  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), pausedDraws, 'User pause stops hero drawing');
   await heroPage.locator('.hero-pause').click();
+  await phase(heroPage, 'dwell');
   await go(heroPage, 'practice');
-  assert(await heroPage.locator('.hero-story').evaluate(el => el.getAnimations({ subtree: true }).every(a => a.playState === 'paused')),
-    'The loop stops outside the introduction');
-  await go(heroPage, 'main');
-  assert(await heroPage.locator('.hero-story').evaluate(el => el.getAnimations({ subtree: true }).some(a => a.playState === 'running')));
+  await phase(heroPage, 'paused');
+  const offDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
+  await heroPage.waitForTimeout(450);
+  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), offDraws, 'Off-section hero work is suspended');
+  await go(heroPage, 'main'); await phase(heroPage, 'dwell');
+  // Exercise the visibilitychange contract without depending on headless tab policy.
+  await heroPage.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await phase(heroPage, 'paused');
+  const hiddenDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
+  await heroPage.waitForTimeout(450);
+  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), hiddenDraws, 'Hidden-document event stops hero drawing');
+  await heroPage.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
+  await phase(heroPage, 'dwell');
+  await heroPage.setViewportSize({ width: 320, height: 568 });
+  await heroPage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await heroPage.locator('.hero-story').scrollIntoViewIfNeeded();
+  await phase(heroPage, 'dwell');
+  await geometry(heroPage);
+  await phase(heroPage, 'dispersing');
+  assert((await particlePixels(heroPage)).count > 100, 'Resizing and enlarged wrapping rebuild usable glyph targets');
   await heroPage.locator('.hero-pause').focus();
   await heroPage.emulateMedia({ reducedMotion: 'reduce' });
   await heroPage.waitForFunction(() => document.querySelector('.hero-story').hidden);
-  assert(await heroPage.locator('.hero-story').isHidden());
   assert(await heroPage.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')));
-  assert.equal(await heroPage.locator('.hero-story').evaluate(el => el.getAnimations({ subtree: true }).length), 0);
-  assert(await heroPage.locator('.hero').evaluate(el => el === document.activeElement), 'Preference changes never strand focus in the hidden pause control');
+  assert(await heroPage.locator('.hero').evaluate(el => el === document.activeElement), 'Motion preference changes recover focus from the hidden control');
   await heroPage.context().close();
-  console.log('PASS: one floating phrase, natural loop, stable layout, pause/resume, off-section suspension and reduced motion');
+  console.log('PASS: real glyph particle motion, stationary three-second reading, loop, pause, suspension, resize and reduced motion');
+
+  for (const fault of ['context', 'readback', 'blank', 'opaque']) {
+    const failing = await open({ viewport: { width: 1440, height: 1000 } }, '', {},
+      // Each failure is injected only at the optional hero Canvas boundary.
+      { content: `(() => {
+        const get = HTMLCanvasElement.prototype.getContext;
+        const read = CanvasRenderingContext2D.prototype.getImageData;
+        const masks = new WeakSet();
+        HTMLCanvasElement.prototype.getContext = function(type, options) {
+          if (${JSON.stringify(fault)} === 'context' && this.classList.contains('hero-particles')) return null;
+          if (options?.willReadFrequently) masks.add(this);
+          return get.call(this, type, options);
+        };
+        CanvasRenderingContext2D.prototype.getImageData = function(...args) {
+          if (!masks.has(this.canvas)) return read.apply(this, args);
+          if (${JSON.stringify(fault)} === 'readback') throw new DOMException('Canvas readback unavailable', 'SecurityError');
+          const result = read.apply(this, args);
+          result.data.fill(${fault === 'opaque' ? 255 : 0});
+          return result;
+        };
+      })();` });
+    await failing.waitForFunction(() => document.querySelector('.hero-story').dataset.phase === 'fallback');
+    assert(await failing.locator('.hero-story').isHidden());
+    assert(await failing.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')));
+    await go(failing, 'practice'); await go(failing, 'main');
+    assert(await failing.locator('.hero-story').isHidden(), 'Failed enhancement stays on its readable fallback');
+    await failing.context().close();
+  }
+  console.log('PASS: unavailable Canvas, rejected readback and corrupt masks retain accessible static prose');
 
   for (const id of ids) {
     await go(page, id); await geometry(page);

@@ -314,14 +314,14 @@
   document.addEventListener('touchcancel', () => { touch = null; }, { passive: true });
 })();
 
-/* Hero storytelling shares the selected-view state; it never drives navigation.
-   Native animations stop outside the visible hero, and the original prose is
-   the stable reading/fallback equivalent instead of a repeating live region. */
+/* Hero storytelling shares selected-view state; it never drives navigation.
+   Local glyph samples form/disperse through particles. The three-second reading
+   phase is ordinary, stationary DOM text, with no animation frame scheduled. */
 (() => {
   'use strict';
   const main = document.querySelector('main');
   const lede = document.querySelector('.hero .hero-lede');
-  if (!lede || !Element.prototype.animate || !window.IntersectionObserver) return;
+  if (!lede || !window.IntersectionObserver || !window.ResizeObserver) return;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const phrases = [
     'An AI-native, human-orchestrated engineering practice.',
@@ -343,67 +343,242 @@
     lines.append(span);
     return span;
   });
-  const motes = document.createElement('span');
-  motes.className = 'hero-motes';
-  motes.setAttribute('aria-hidden', 'true');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'hero-particles';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.hidden = true;
+  const mask = document.createElement('canvas');
+  let context, sample;
+  try {
+    context = canvas.getContext('2d');
+    sample = mask.getContext('2d', { willReadFrequently: true });
+  } catch { /* A browser privacy/context restriction keeps the original prose. */ }
   const pause = document.createElement('button');
   pause.type = 'button';
   pause.className = 'hero-pause';
   pause.setAttribute('aria-label', 'Pause rotating introduction');
   pause.setAttribute('aria-pressed', 'false');
-  story.append(lines, motes, pause);
+  story.append(lines, canvas, pause);
   lede.after(story);
 
-  let index = 0, userPaused = false, inView = false;
-  let animations = [];
-  const canRun = () => !motion.matches && !userPaused && !document.hidden && inView &&
-    (!main.dataset.activeSection || main.dataset.activeSection === 'main');
+  const padding = 32, frameInterval = 1000 / 30, maxPixels = 1500000;
+  let index = 0, userPaused = false, inView = false, started = false;
+  let failed = !context || !sample, dirty = true;
+  let frame = 0, timer = 0, phaseStart = 0, lastDraw = 0;
+  let width = 0, height = 0, ratio = 1, particles = [];
+  let layoutWidth = lines.clientWidth, layoutHeight = lines.clientHeight;
+  let layoutRatio = devicePixelRatio;
+  const canRun = () => !failed && !motion.matches && !userPaused && !document.hidden && inView &&
+    (!main.dataset.activeSection || main.dataset.activeSection === 'main') &&
+    !main.hasAttribute('data-transitioning');
 
-  function clearAnimations() {
-    animations.forEach(animation => { animation.onfinish = null; animation.cancel(); });
-    animations = [];
+  function stopWork() {
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    frame = timer = 0;
   }
 
-  function cycle() {
-    clearAnimations();
+  function readable(phase) {
+    story.dataset.phase = phase;
+    canvas.hidden = true;
+    context?.clearRect(0, 0, width, height);
     spans.forEach((span, i) => span.classList.toggle('is-current', i === index));
-    const text = spans[index].animate([
-      { offset: 0, opacity: 0, filter: 'blur(7px)', transform: 'translateY(10px) scale(.985)' },
-      { offset: .14, opacity: 1, filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
-      { offset: .83, opacity: 1, filter: 'blur(0)', transform: 'translateY(-2px) scale(1)' },
-      { offset: 1, opacity: 0, filter: 'blur(7px)', transform: 'translateY(-12px) scale(1.02)' },
-    ], { duration: 6000, fill: 'both', easing: 'linear' });
-    const dust = motes.animate([
-      { offset: 0, opacity: .6, filter: 'blur(1px)', transform: 'translateY(10px) scale(.94)' },
-      { offset: .16, opacity: 0, filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
-      { offset: .80, opacity: 0, filter: 'blur(0)', transform: 'translateY(-2px) scale(1)' },
-      { offset: 1, opacity: .6, filter: 'blur(1px)', transform: 'translateY(-12px) scale(1.08)' },
-    ], { duration: 6000, fill: 'both', easing: 'linear' });
-    animations = [text, dust];
-    text.onfinish = () => {
-      index = (index + 1) % spans.length;
-      clearAnimations();
-      if (canRun()) cycle();
-    };
+  }
+
+  function fallback() {
+    failed = true;
+    stopWork();
+    readable('fallback');
+    story.hidden = true;
+    lede.classList.remove('visually-hidden');
+    if (story.contains(document.activeElement)) main.querySelector('.hero').focus({ preventScroll: true });
+  }
+
+  function prepareParticles() {
+    const box = story.getBoundingClientRect();
+    width = Math.ceil(box.width + padding * 2);
+    height = Math.ceil(box.height + padding * 2);
+    const area = width * height;
+    // Both backing stores together stay below 1.5 million pixels (6 MB RGBA).
+    if (!area || area * 2 > maxPixels) return false;
+    ratio = Math.min(devicePixelRatio || 1, 2, Math.sqrt(maxPixels / area - 1));
+    mask.width = width;
+    mask.height = height;
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    Object.assign(canvas.style, {
+      width: `${width}px`, height: `${height}px`, left: `${-padding}px`, top: `${-padding}px`,
+    });
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const style = getComputedStyle(spans[index]);
+    sample.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    sample.fillStyle = '#fff';
+    sample.textBaseline = 'alphabetic';
+    if ('letterSpacing' in sample) sample.letterSpacing = style.letterSpacing === 'normal' ? '0px' : style.letterSpacing;
+    const metrics = sample.measureText('Mg');
+    if (!Number.isFinite(metrics.fontBoundingBoxAscent)) return false;
+
+    // Range follows the browser's balanced wrapping and actual system font.
+    // Drawing a complete line retains its kerning instead of guessing a wrap.
+    const range = document.createRange(), rows = [];
+    const node = spans[index].firstChild;
+    for (let i = 0; i < node.length; i++) {
+      range.setStart(node, i);
+      range.setEnd(node, i + 1);
+      const rect = range.getBoundingClientRect();
+      if (!rect.width) continue;
+      let row = rows[rows.length - 1];
+      if (!row || Math.abs(row.top - rect.top) > 2) {
+        row = { text: '', left: rect.left, top: rect.top, height: rect.height };
+        rows.push(row);
+      }
+      row.text += node.textContent[i];
+    }
+    for (const row of rows) {
+      const baseline = row.top - box.top + padding + metrics.fontBoundingBoxAscent +
+        (row.height - metrics.fontBoundingBoxAscent - metrics.fontBoundingBoxDescent) / 2;
+      sample.fillText(row.text.trimEnd(), row.left - box.left + padding, baseline);
+    }
+    let pixels;
+    try { pixels = sample.getImageData(0, 0, width, height).data; }
+    catch { return false; }
+    // Ignore tiny alpha perturbations; reject blocked/noisy readbacks rather
+    // than turning browser privacy output into illegible animated text.
+    const corners = [0, width - 1, width * (height - 1), area - 1];
+    if (corners.some(point => pixels[point * 4 + 3] > 16)) return false;
+    const targets = [];
+    for (let y = padding; y < height - padding; y += 2) {
+      for (let x = padding; x < width - padding; x += 2) {
+        if (pixels[(y * width + x) * 4 + 3] > 128) targets.push({ x, y });
+      }
+    }
+    if (targets.length < 40 || targets.length > area / 8) return false;
+    sample.globalCompositeOperation = 'source-in';
+    sample.fillStyle = style.color;
+    sample.fillRect(0, 0, width, height);
+    sample.globalCompositeOperation = 'source-over';
+    const count = Math.min(1600, targets.length), previous = particles;
+    particles = Array.from({ length: count }, (_, i) => {
+      const target = targets[Math.floor(i * targets.length / count)];
+      const old = previous[i % previous.length];
+      return {
+        x: target.x, y: target.y,
+        fromX: old?.cloudX ?? padding + Math.random() * (width - padding * 2),
+        fromY: old?.cloudY ?? height / 2 + (Math.random() - .5) * Math.min(height - 8, 100),
+        cloudX: Math.max(4, Math.min(width - 4, target.x + (Math.random() - .5) * 160)),
+        cloudY: Math.max(4, Math.min(height - 4, target.y + (Math.random() - .5) * 96)),
+        bend: (Math.random() - .5) * 44, delay: Math.random() * .18,
+      };
+    });
+    story.dataset.particleCount = String(count);
+    dirty = false;
+    return true;
+  }
+
+  function drawParticles(fraction) {
+    context.clearRect(0, 0, width, height);
+    const forming = story.dataset.phase === 'forming';
+    const colors = ['#4dd6c0', '#6f8fae', '#9aa4b2'];
+    // A short glyph-mask handoff closes the sampled grid's gaps before DOM
+    // takes over; the inverse handoff releases the exact lettering into dust.
+    const handoff = forming ? Math.max(0, (fraction * 1100 - 950) / 150) : Math.max(0, 1 - fraction * 1000 / 150);
+    const maskAlpha = handoff * handoff * (3 - 2 * handoff);
+    for (let i = 0; i < particles.length; i++) {
+      const particle = particles[i];
+      const progress = Math.max(0, Math.min(1, (fraction - particle.delay) / (1 - particle.delay)));
+      const eased = progress * progress * (3 - 2 * progress);
+      const startX = forming ? particle.fromX : particle.x;
+      const startY = forming ? particle.fromY : particle.y;
+      const endX = forming ? particle.x : particle.cloudX;
+      const endY = forming ? particle.y : particle.cloudY;
+      const curl = Math.sin(Math.PI * progress) * particle.bend;
+      const x = startX + (endX - startX) * eased + curl;
+      const y = startY + (endY - startY) * eased + curl * .65;
+      const coherence = forming ? eased : 1 - eased;
+      context.fillStyle = coherence > .85 ? colors[2] : colors[i % colors.length];
+      context.globalAlpha = (.28 + coherence * .72) * (1 - maskAlpha);
+      const size = 1.65 - coherence * .6;
+      context.fillRect(x - size / 2, y - size / 2, size, size);
+    }
+    if (maskAlpha > 0) {
+      context.globalAlpha = maskAlpha;
+      context.drawImage(mask, 0, 0);
+    }
+    context.globalAlpha = 1;
+  }
+
+  function dwell() {
+    stopWork();
+    readable('dwell');
+    timer = setTimeout(() => {
+      timer = 0;
+      if (canRun()) animate('dispersing');
+      else sync();
+    }, 3000);
+  }
+
+  function renderParticles(now) {
+    frame = 0;
+    if (!canRun()) { sync(); return; }
+    const forming = story.dataset.phase === 'forming';
+    const duration = forming ? 1100 : 1000;
+    const elapsed = now - phaseStart;
+    if (elapsed >= duration) {
+      if (forming) dwell();
+      else {
+        drawParticles(1);
+        index = (index + 1) % spans.length;
+        dirty = true;
+        animate('forming');
+      }
+      return;
+    }
+    if (now - lastDraw >= frameInterval) {
+      drawParticles(elapsed / duration);
+      lastDraw = now;
+    }
+    frame = requestAnimationFrame(renderParticles);
+  }
+
+  function animate(phase) {
+    stopWork();
+    if (dirty && !prepareParticles()) { fallback(); return; }
+    spans.forEach((span, i) => span.classList.toggle('is-current', i === index));
+    story.dataset.phase = phase;
+    canvas.hidden = false;
+    phaseStart = performance.now();
+    lastDraw = phaseStart;
+    drawParticles(0);
+    frame = requestAnimationFrame(renderParticles);
   }
 
   function sync() {
+    if (failed) { fallback(); return; }
     story.hidden = motion.matches;
     lede.classList.toggle('visually-hidden', !motion.matches);
-    if (motion.matches) {
-      if (story.contains(document.activeElement)) main.querySelector('.hero').focus({ preventScroll: true });
-      clearAnimations();
+    if (motion.matches || !canRun()) {
+      stopWork();
+      readable(motion.matches ? 'fallback' : 'paused');
+      if (motion.matches && story.contains(document.activeElement)) main.querySelector('.hero').focus({ preventScroll: true });
       return;
     }
-    if (canRun()) {
-      if (!animations.length) cycle();
-      else animations.forEach(animation => animation.play());
-    } else {
-      animations.forEach(animation => animation.pause());
-      // A deliberate pause leaves the current phrase crisp and readable.
-      if (userPaused) animations.forEach(animation => { animation.currentTime = 2400; });
-    }
+    if (frame || timer) return;
+    if (!started) { started = true; animate('forming'); }
+    else dwell();
   }
+
+  function resize() {
+    if (lines.clientWidth === layoutWidth && lines.clientHeight === layoutHeight && devicePixelRatio === layoutRatio) return;
+    layoutWidth = lines.clientWidth;
+    layoutHeight = lines.clientHeight;
+    layoutRatio = devicePixelRatio;
+    particles = [];
+    dirty = true;
+    stopWork();
+    readable('paused');
+    sync();
+  }
+
   pause.addEventListener('click', () => {
     userPaused = !userPaused;
     pause.setAttribute('aria-pressed', String(userPaused));
@@ -411,9 +586,12 @@
     sync();
   });
   new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }).observe(story);
-  new MutationObserver(sync).observe(main, { attributes: true, attributeFilter: ['data-active-section'] });
+  new MutationObserver(sync).observe(main, { attributes: true, attributeFilter: ['data-active-section', 'data-transitioning'] });
+  new ResizeObserver(resize).observe(lines);
+  window.addEventListener('resize', resize, { passive: true });
+  document.fonts?.addEventListener('loadingdone', () => { dirty = true; stopWork(); sync(); });
   document.addEventListener('visibilitychange', sync);
   motion.addEventListener('change', sync);
-  spans[0].classList.add('is-current');
+  readable('paused');
   sync();
 })();

@@ -1,9 +1,75 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; hero storytelling, contact completion and lifecycle refinement.
+**Status:** Existing public website; atomic phrase formation and bounded layout refinement.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Atomic phrase formation and proportions — 2026-09-05
+
+Ed requested particles that form each phrase, three seconds of completely static
+reading, then dispersion into the next phrase; slightly more space above and
+below that line; a wider, shorter Interferometry card; and an arrow with only
+“Back”. Full implementation, review, Git delivery and deployment remain authorized.
+The immediate base `9a184b4` is preserved in a restored/verified bundle and the tag
+`rollback/aekr-web-pre-atomic-phrases-2026-09-05`; the PR #4 tag remains included.
+
+Before implementation: the nine decorative motes and whole-line fade cannot form
+letter shapes. Reuse the existing phrase grid, six phrases, pause control and
+selected-section state. The visual research follows the text-mask/particle target
+technique in [Codrops](https://tympanus.net/codrops/2011/11/09/interactive-html5-typography/)
+and the native [Canvas readback](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/getImageData)
+and [rendering guidance](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas).
+The new implementation is original; no external code or dependency is imported.
+Existing CSS animation lacks glyph sampling; native Canvas 2D supplies that
+missing primitive without a general particle framework, new WebGL renderer or
+server/configuration surface. This is the minimum new local rendering boundary
+needed for the authorized formation effect. The site's background renderer and
+section/symbol controller remain outside the change.
+
+A separate UI/UX design pass selects local glyph-aligned particles, a crisp DOM
+handoff and exactly 3000 ms of stationary text. Bound particle count, drawing rate,
+pixel area and device-pixel ratio; draw only while forming or dispersing. Preserve
+the static accessible prose and no-JavaScript/reduced-motion fallback, and stop
+work for pause, hidden tab, off-hero visibility and unusable Canvas readback.
+Tests must prove real pixel motion, a stationary dwell, wrap alignment, suspension
+and failure recovery. The card reuses its present styling at roughly 17rem width
+and 60% of the stage-column height, centered vertically; narrow layouts retain
+their reading order. Two local spacing changes and the shorter Back label finish
+the bounded scope. Verification and separate review cover only affected outputs.
+
+Implementation result: the existing hero IIFE now samples actual browser-wrapped
+lines into a local Canvas mask. Up to 1,600 particles converge for 1,100 ms, hand
+off to completely stationary DOM text for 3,000 ms, then disperse for 1,000 ms.
+A 150 ms complementary mask blend makes the particle/text handoff continuous.
+Drawing is capped at 30 fps and DPR 2; both backing stores together are capped
+at 1.5 million pixels. Reading uses one timer and no hero animation frames. Pause,
+visibility, section changes, resize and motion preferences reuse existing state;
+unavailable or unusable Canvas sampling retains the original accessible prose.
+
+The changed outputs are `public/sections.js`, `public/styles.css`,
+`public/index.html`, `tests/sections.mjs` and this guide. The hero IIFE grows from
+103 to 281 lines (+226/-48); its added branches serve glyph sampling, bounded
+rendering, phase transitions and failure/suspension handling. The nine decorative
+motes and whole-line floating animation are removed. There is no new dependency,
+public API, configuration, server behavior or Project Map topology. The entire
+atmosphere/contact script and the approved section/symbol controller prefix are
+byte-identical to the base. Original artwork, identity sizes and green headings
+are preserved. Desktop Interferometry changes from 208 x 536 px to 272 x 337 px
+at 1440 x 1000; mobile retains the original reading order. Both phrase gaps gain
+8 px at the default text size. The home link retains its route and arrow, with
+only “Back” as visible text.
+
+Validation: repository checks and the real-Brave browser suite pass, including
+actual particle pixel motion, a measured three-second stationary dwell, loop,
+pause/resume, visibility-event suspension, resized glyph sampling, four Canvas
+failure fallbacks, 320 px/200% text, original navigation and mocked contact
+success/failure/race behavior. A separate agent checked callback/pixel limits;
+UI/UX review checked intermediate frames and wrapped handoff alignment. No real
+contact email was sent. Review is a separate shared-context pass under this
+Lean Mode 0 board, not an independent-context audit. Changed-output hashes,
+validation logs, screenshots, review and delivery receipts remain in the external
+recovery directory. No unresolved minimality or functional finding remains.
 
 ## Heading color refinement — 2026-09-05
 

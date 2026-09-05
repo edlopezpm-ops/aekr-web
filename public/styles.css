@@ -431,7 +431,7 @@ main {
   position: relative;
   width: 100%;
   max-width: 58ch;
-  margin-top: 1.25rem;
+  margin-top: 1.75rem;
   padding-inline: 34px;
   color: var(--fg-muted);
   font-size: clamp(1.05rem, 2vw, 1.22rem);
@@ -459,21 +459,14 @@ main {
   visibility: visible;
 }
 
-.hero-motes {
+.hero-particles {
   position: absolute;
-  inset: -12px 5%;
   pointer-events: none;
-  opacity: 0;
-  background:
-    radial-gradient(circle at 6% 65%, #4dd6c0aa 0 1px, transparent 3px),
-    radial-gradient(circle at 16% 32%, #eef1f577 0 1px, transparent 2px),
-    radial-gradient(circle at 24% 70%, #4dd6c099 0 1px, transparent 3px),
-    radial-gradient(circle at 37% 25%, #6f8faeaa 0 1px, transparent 3px),
-    radial-gradient(circle at 45% 56%, #eef1f588 0 1px, transparent 2px),
-    radial-gradient(circle at 58% 38%, #4dd6c099 0 1px, transparent 3px),
-    radial-gradient(circle at 69% 68%, #6f8faeaa 0 1px, transparent 3px),
-    radial-gradient(circle at 78% 24%, #eef1f588 0 1px, transparent 2px),
-    radial-gradient(circle at 91% 55%, #4dd6c0aa 0 1px, transparent 3px);
+}
+
+.hero-story[data-phase="forming"] .hero-phrase.is-current,
+.hero-story[data-phase="dispersing"] .hero-phrase.is-current {
+  visibility: hidden;
 }
 
 .hero-pause {
@@ -773,7 +766,7 @@ main {
    Font-relative sizing also restores the vertical layout for enlarged text. */
 @container (min-width: 48rem) {
   .sections-enabled .lifecycle-layout > .lifecycle {
-    width: calc(100% - 15rem);
+    width: calc(100% - 19rem);
     margin-top: 0;
   }
 
@@ -783,15 +776,18 @@ main {
 
   .sections-enabled .lifecycle-layout > .lifecycle-layer {
     position: absolute;
-    inset: 0 0 0 auto;
-    width: 13rem;
+    inset: 50% 0 auto auto;
+    width: 17rem;
+    height: 60%;
+    min-height: max-content;
+    transform: translateY(-50%);
     margin: 0;
-    padding: 1.5rem;
+    padding: 1.25rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 1.5rem;
-    line-height: 1.8;
+    gap: 1rem;
+    line-height: 1.65;
     background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
   }
 
@@ -1309,9 +1305,12 @@ main {
 }
 
 .sections-enabled .hero .eyebrow,
-.sections-enabled .hero-lede,
-.sections-enabled .hero-tagline {
+.sections-enabled .hero-lede {
   margin-top: 1.25rem;
+}
+
+.sections-enabled .hero-tagline {
+  margin-top: 1.75rem;
 }
 
 .sections-enabled .cta-row {
