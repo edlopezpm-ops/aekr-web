@@ -9,6 +9,7 @@
   },
   "scripts": {
     "check": "node tools/check.mjs",
+    "check:browser": "node tests/sections.mjs",
     "check:map": "node tools/aekr/validate-project-map.mjs PROJECT_MAP.html project-map.json ."
   }
 }

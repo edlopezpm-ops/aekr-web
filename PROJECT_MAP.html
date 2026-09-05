@@ -45,6 +45,10 @@
           "path": "public/script.js"
         },
         {
+          "id": "section-navigation",
+          "path": "public/sections.js"
+        },
+        {
           "id": "site-assets",
           "path": "public/assets/"
         },
@@ -233,6 +237,34 @@
             "canvas",
             "motion",
             "contact"
+          ]
+        },
+        {
+          "id": "section-navigation",
+          "path": "public/sections.js",
+          "authority": "implementation",
+          "summary": "Coordinates individual section views, accessible navigation, history and bounded gestures.",
+          "label": "Section navigation",
+          "kind": "Browser interactions",
+          "responsibilities": [
+            "Show one section and coordinate wheel, touch, keyboard and hash navigation.",
+            "Keep tall content reachable and inactive panels out of the focus order."
+          ],
+          "boundaries": [
+            "No content, email or atmosphere ownership; the static document remains the fallback."
+          ],
+          "useWhen": [
+            "Inspect section transitions, history or viewport layout."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/styles.css",
+            "tests/sections.mjs"
+          ],
+          "tags": [
+            "navigation",
+            "accessibility",
+            "transitions"
           ]
         },
         {

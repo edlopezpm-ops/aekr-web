@@ -123,6 +123,18 @@ Map and the declared AEKR scaffold variant. CI repeats the same command on pushe
 and pull requests. It does not deploy the site or prove live email delivery.
 Visual and keyboard checks remain part of review for frontend/map changes.
 
+The section-navigation browser checks run with `npm run check:browser` using an
+existing Playwright installation. If that installation is outside the project,
+set `PLAYWRIGHT_MODULE` to its module entry and optionally `BROWSER_EXECUTABLE`
+to a Chromium-compatible browser executable. No website dependency is added.
+The check starts a temporary local static server, exercises desktop/mobile
+navigation, history, keyboard, touch, form preservation and motion preferences,
+and intercepts contact submissions so it cannot send email. `SITE_URL` selects
+an already running site; `SCREENSHOT_DIR` optionally saves viewport screenshots.
+`BASELINE_REF` additionally compares all original section markup against a Git
+revision during local verification. Browser checks are separate from the
+dependency-free default CI command.
+
 ## Local preview
 
 ```

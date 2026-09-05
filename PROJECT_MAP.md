@@ -18,7 +18,9 @@ flowchart TD
 ```
 
 The public site combines content, responsive styles and decorative browser
-interaction. The Worker owns contact validation and email delivery. Hosting
+interaction. `public/sections.js` coordinates individual views, accessible
+navigation and history separately from the atmosphere and contact handler.
+The Worker owns contact validation and email delivery. Hosting
 configuration connects the two and limits static publication to `public/`.
 
 Repository documentation, the map, governance files and validators form the

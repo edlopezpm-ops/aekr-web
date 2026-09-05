@@ -122,7 +122,7 @@ function checkSourceSnapshot() {
 
 try {
   checkProvenance();
-  for (const file of [...walk('public'), ...walk('src'), ...walk('tools')].filter((file) => /\.(?:js|mjs)$/.test(file))) {
+  for (const file of [...walk('public'), ...walk('src'), ...walk('tools'), ...walk('tests')].filter((file) => /\.(?:js|mjs|cjs)$/.test(file))) {
     run(['--check', file]);
   }
   checkWebsite();
