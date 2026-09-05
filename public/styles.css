@@ -67,12 +67,6 @@ body {
    ========================================================================== */
 
 .atmosphere {
-  --nebula-pointer-x: 0px;
-  --nebula-pointer-y: 0px;
-  --nebula-far-x: 0px;
-  --nebula-far-y: 0px;
-  --nebula-cursor-x: 72%;
-  --nebula-cursor-y: 48%;
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -107,25 +101,18 @@ body {
     radial-gradient(ellipse 54% 66% at 94% 34%, color-mix(in srgb, var(--nebula-steel) 38%, transparent), transparent 66%),
     radial-gradient(ellipse 58% 34% at 48% 106%, color-mix(in srgb, var(--accent-dim) 32%, transparent), transparent 70%);
   filter: blur(24px) saturate(0.86);
-  transform: translate3d(var(--nebula-far-x), var(--nebula-far-y), 0) scale(1.05);
+  transform: scale(1.05);
   transition: opacity 1500ms var(--ease-standard), transform 1500ms var(--ease-standard);
 }
 
-/* accreatio's home atmosphere, adapted to the AEKR palette. The full-screen
-   procedural pass uses the same overscan and 1050ms mouse parallax response. */
+/* The deployed accreatio home shader owns gas visibility and click sampling.
+   Keep the same viewport coordinates for the rendered field and each burst. */
 .atmosphere__webgl {
   display: block;
   z-index: 2;
-  inset: -7%;
-  width: 114%;
-  height: 114%;
+  inset: 0;
   opacity: calc(var(--atmosphere-density) * 0.92);
   filter: saturate(1.02);
-  -webkit-mask-image: linear-gradient(to left, black 0 34%, color-mix(in srgb, black 88%, transparent) 58%, color-mix(in srgb, black 38%, transparent) 82%, transparent 100%);
-  mask-image: linear-gradient(to left, black 0 34%, color-mix(in srgb, black 88%, transparent) 58%, color-mix(in srgb, black 38%, transparent) 82%, transparent 100%);
-  transform: translate3d(var(--nebula-pointer-x), var(--nebula-pointer-y), 0) scale(1.08);
-  transform-origin: center;
-  transition: transform 1050ms var(--ease-standard);
 }
 
 .atmosphere[data-renderer="webgl"] .atmosphere__nebula {
@@ -137,17 +124,20 @@ body {
   transition: none;
 }
 
-.atmosphere__cursor-field {
-  z-index: 3;
-  opacity: calc(var(--atmosphere-density) * 0.5);
-  background: radial-gradient(28rem circle at var(--nebula-cursor-x) var(--nebula-cursor-y), color-mix(in srgb, var(--nebula-steel) 10%, transparent), transparent 70%);
-}
-
 .atmosphere__scrim {
   z-index: 4;
   background:
     radial-gradient(ellipse 42% 62% at 50% 48%, color-mix(in srgb, var(--bg) 68%, transparent) 0 28%, color-mix(in srgb, var(--bg) 38%, transparent) 58%, transparent 82%),
     linear-gradient(to bottom, color-mix(in srgb, var(--bg) 28%, transparent), transparent 22% 72%, color-mix(in srgb, var(--bg) 42%, transparent));
+}
+
+@media (max-width: 600px) {
+  .atmosphere__scrim {
+    /* Keep the narrow reading column legible as bright gas crosses behind it. */
+    background:
+      radial-gradient(ellipse 75% 70% at 50% 48%, color-mix(in srgb, var(--bg) 85%, transparent) 0 28%, color-mix(in srgb, var(--bg) 65%, transparent) 58%, transparent 90%),
+      linear-gradient(to bottom, color-mix(in srgb, var(--bg) 28%, transparent), transparent 22% 72%, color-mix(in srgb, var(--bg) 42%, transparent));
+  }
 }
 
 .site-header,
@@ -231,12 +221,64 @@ p {
 }
 
 .wordmark {
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  color: var(--fg);
+  display: inline-flex;
+  align-items: center;
+  width: 5.75rem;
+  min-height: 44px;
   text-decoration: none;
   flex-shrink: 0;
+}
+
+/* Reuse the official 480px logo: the lettering crop is x100/y302, 280x60.
+   This preserves its drawn A/E/K/R and mint dot without substituting a font. */
+.brand-lettering {
+  display: block;
+  width: 100%;
+  aspect-ratio: 14 / 3;
+  background-image: url("assets/aekr-logo.png");
+  background-size: 171.428571% auto;
+  background-position: 50% 71.904762%;
+  background-repeat: no-repeat;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (forced-colors: active) {
+  .brand-lettering {
+    display: none;
+  }
+
+  .wordmark .visually-hidden,
+  .hero-title .visually-hidden,
+  .footer-brand .visually-hidden {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .wordmark,
+  .footer-brand {
+    font-weight: 600;
+    letter-spacing: 0.2em;
+  }
+
+  .hero-title {
+    font-size: clamp(2.75rem, 9vw, 4.5rem);
+    letter-spacing: 0.14em;
+  }
 }
 
 .site-nav {
@@ -347,11 +389,9 @@ main {
 }
 
 .hero-title {
-  font-size: clamp(2.75rem, 9vw, 4.5rem);
-  letter-spacing: 0.14em;
+  width: clamp(13rem, 54vw, 21rem);
+  max-width: 100%;
   margin: 0;
-  font-weight: 600;
-  text-indent: 0.14em;
 }
 
 .hero-expansion {
@@ -813,12 +853,10 @@ main {
   margin: 0.25rem 0;
 }
 
-.footer-brand {
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  color: var(--fg);
-  text-indent: 0.28em;
+.site-footer .footer-brand {
+  width: 7rem;
+  max-width: 100%;
+  margin: 0.25rem auto;
 }
 
 .footer-expansion {
@@ -925,11 +963,6 @@ main {
   :root {
     --space-3: 1.25rem;
     --space-5: 3.5rem;
-  }
-
-  .hero-title {
-    letter-spacing: 0.1em;
-    text-indent: 0.1em;
   }
 
   .form-actions .btn {

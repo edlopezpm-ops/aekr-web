@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
-   Atmosphere — drifting starfield with pointer parallax.
+   Atmosphere — autonomous drifting starfield.
    Capped at 30fps, pauses when hidden, and holds still under reduced motion.
    -------------------------------------------------------------------------- */
 (() => {
@@ -18,17 +18,15 @@
   const MIN_AREA_MEGAPIXELS = 0.65;
 
   const DEPTH_SPECS = [
-    { alpha: [0.25, 0.5], densityPerMegapixel: 40, driftPx: 10, parallaxPx: 1.2, periodSeconds: [50, 80], radiusPx: [0.4, 0.8] },
-    { alpha: [0.35, 0.6], densityPerMegapixel: 16, driftPx: 16, parallaxPx: 2.6, periodSeconds: [36, 58], radiusPx: [0.8, 1.3] },
-    { alpha: [0.45, 0.75], densityPerMegapixel: 6, driftPx: 26, parallaxPx: 4.5, periodSeconds: [24, 40], radiusPx: [1.3, 2] },
+    { alpha: [0.25, 0.5], densityPerMegapixel: 40, driftPx: 10, periodSeconds: [50, 80], radiusPx: [0.4, 0.8] },
+    { alpha: [0.35, 0.6], densityPerMegapixel: 16, driftPx: 16, periodSeconds: [36, 58], radiusPx: [0.8, 1.3] },
+    { alpha: [0.45, 0.75], densityPerMegapixel: 6, driftPx: 26, periodSeconds: [24, 40], radiusPx: [1.3, 2] },
   ];
 
   const STAR_COLORS = ["#eef1f5", "#4dd6c0", "#9db3c9"];
 
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const finePointerQuery = window.matchMedia("(pointer: fine)");
   const slowUpdateQuery = window.matchMedia("(update: slow)");
-  const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
   const connection = navigator.connection;
 
   function seededRandom(seed) {
@@ -65,7 +63,6 @@
     }));
   });
 
-  const pointer = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
   const viewport = { width: 1, height: 1 };
   let areaMegapixels = MIN_AREA_MEGAPIXELS;
   let animationFrame = 0;
@@ -73,7 +70,7 @@
   let paused = document.hidden;
 
   const motionAllowed = () => !paused && !reducedMotionQuery.matches &&
-    !slowUpdateQuery.matches && !coarsePointerQuery.matches && !connection?.saveData;
+    !slowUpdateQuery.matches && !connection?.saveData;
 
   function draw(now) {
     context.clearRect(0, 0, viewport.width, viewport.height);
@@ -81,16 +78,14 @@
     DEPTH_SPECS.forEach((spec, depthIndex) => {
       const pool = pools[depthIndex];
       const visibleCount = Math.min(pool.length, Math.ceil(spec.densityPerMegapixel * areaMegapixels));
-      const parallaxX = pointer.currentX * spec.parallaxPx * -2;
-      const parallaxY = pointer.currentY * spec.parallaxPx * -1.3;
 
       for (let i = 0; i < visibleCount; i += 1) {
         const star = pool[i];
         const phase = motionAllowed() ? (now / star.periodMs) * TWO_PI : 0;
         const driftX = spec.driftPx * Math.sin(phase + star.phaseA);
         const driftY = spec.driftPx * 0.7 * Math.cos(phase * 0.8 + star.phaseB);
-        const x = star.x * viewport.width + driftX + parallaxX;
-        const y = star.y * viewport.height + driftY + parallaxY;
+        const x = star.x * viewport.width + driftX;
+        const y = star.y * viewport.height + driftY;
 
         context.beginPath();
         context.globalAlpha = star.alpha;
@@ -118,9 +113,6 @@
   function tick(now) {
     animationFrame = window.requestAnimationFrame(tick);
     if (now - lastFrame < FRAME_INTERVAL_MS) return;
-    const interpolation = 1 - Math.pow(0.001, (now - lastFrame) / 1000);
-    pointer.currentX += (pointer.targetX - pointer.currentX) * interpolation;
-    pointer.currentY += (pointer.targetY - pointer.currentY) * interpolation;
     lastFrame = now;
     draw(now);
 
@@ -135,34 +127,17 @@
     }
   }
 
-  function handlePointerMove(event) {
-    if (!motionAllowed() || !finePointerQuery.matches) return;
-    pointer.targetX = clamp(event.clientX / window.innerWidth - 0.5, -0.5, 0.5);
-    pointer.targetY = clamp(event.clientY / window.innerHeight - 0.5, -0.5, 0.5);
-  }
-
-  function resetPointer() {
-    pointer.targetX = 0;
-    pointer.targetY = 0;
-  }
-
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(canvas);
   resize();
   startLoop();
 
-  window.addEventListener("pointermove", handlePointerMove, { passive: true });
-  window.addEventListener("pointerout", (event) => {
-    if (event.relatedTarget === null) resetPointer();
-  });
-  window.addEventListener("blur", resetPointer);
   document.addEventListener("visibilitychange", () => {
     paused = document.hidden;
     startLoop();
   });
   reducedMotionQuery.addEventListener("change", startLoop);
   slowUpdateQuery.addEventListener("change", startLoop);
-  coarsePointerQuery.addEventListener("change", startLoop);
   connection?.addEventListener?.("change", startLoop);
 })();
 
@@ -170,8 +145,8 @@
    Procedural nebula adapted from accreatio, Copyright (c) 2026 Ed Lopez.
    All rights reserved. AEKR adaptation authorized by the copyright holder.
    Source: src/components/nebula.ts and src/components/Atmosphere.tsx,
-   accreatio commit de3558870aed85a9b763421a1e919fdf19c25dea.
-   The source's home speed, shader field and mouse response are preserved;
+   accreatio deployed preview commit 53343211a2176be487c17fa8f58202146f3eac7e.
+   The source's autonomous home currents and click pressure waves are preserved;
    strata colors use AEKR mint/steel. No service or third-party runtime.
    -------------------------------------------------------------------------- */
 (() => {
@@ -195,8 +170,11 @@
   varying vec2 v_uv;
   uniform vec2 u_resolution;
   uniform float u_time;
-  uniform vec2 u_pointer;
   uniform float u_theme;
+  uniform float u_cssHeight;
+  uniform vec4 u_bursts[4];
+  uniform float u_picking;
+  uniform vec2 u_pickUv;
 
   float hash(vec2 p) {
     p = fract(p * vec2(234.34, 435.345));
@@ -229,14 +207,37 @@
   }
 
   void main() {
+    vec2 sampleUv = mix(v_uv, u_pickUv, u_picking);
     vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
-    vec2 uv = v_uv * aspect;
+    vec2 uv = sampleUv * aspect;
     float t = u_time;
 
-    // Gas coordinates: gentle autonomous drift plus a small pointer-driven
-    // shear so the medium itself answers the cursor.
-    vec2 p = uv * 2.1 + vec2(t * 0.011, -t * 0.006);
-    p += u_pointer * 0.22;
+    // Autonomous currents: travel and curl remain independent of the pointer.
+    vec2 p = uv * 2.1 + vec2(t * 0.026, -t * 0.017);
+    p += vec2(sin(t * 0.13 + uv.y * 2.0), cos(t * 0.11 + uv.x)) * 0.13;
+
+    // A local pressure wave pushes gas aside, curls its rim, then dissipates.
+    // Distances are CSS pixels, so each bubble has the same size on every screen.
+    float shell = 0.0;
+    float hollow = 0.0;
+    for (int i = 0; i < 4; i++) {
+      vec4 burst = u_bursts[i];
+      if (burst.w < 0.5) continue;
+      vec2 offset = (sampleUv - burst.xy) * aspect;
+      float distancePx = length(offset) * u_cssHeight;
+      vec2 direction = offset / max(length(offset), 0.0001);
+      float progress = clamp(burst.z / 1.6, 0.0, 1.0);
+      float life = (1.0 - smoothstep(0.2, 1.0, progress)) * burst.w;
+      float radius = 8.0 + 105.0 * (1.0 - pow(1.0 - progress, 2.0));
+      float angle = atan(offset.y, offset.x + 0.00001);
+      float ruffle = sin(angle * 6.0 + progress * 8.0) * 4.0
+                   + sin(angle * 11.0 - progress * 5.0) * 2.5;
+      float ring = exp(-pow((distancePx - radius - ruffle) / (11.0 + progress * 15.0), 2.0)) * life;
+      p += direction * ring * 0.16;
+      p += vec2(-direction.y, direction.x) * ring * 0.055 * sin(angle * 4.0);
+      shell += ring;
+      hollow += (1.0 - smoothstep(radius * 0.35, radius, distancePx)) * life;
+    }
 
     vec2 q = vec2(fbm(p), fbm(p + vec2(5.2, 1.3)));
     vec2 r = vec2(
@@ -246,7 +247,7 @@
     float f = fbm(p + 2.4 * r);
 
     // Density: keep the left reading column airy, thicken toward the right.
-    float column = smoothstep(0.05, 0.72, v_uv.x);
+    float column = smoothstep(0.05, 0.72, sampleUv.x);
     float density = smoothstep(0.32, 0.94, f) * mix(0.35, 1.0, column);
 
     // Strata coloring.
@@ -260,10 +261,10 @@
     color = mix(color, steel, clamp(dot(q, q) * 0.85, 0.0, 1.0));
     color = mix(color, teal, clamp(r.y * r.y * 0.9, 0.0, 1.0) * 0.55);
 
-    // Emission cores: one anchored in the gas, one carried by the pointer.
-    vec2 core = vec2(0.72, 0.46) * aspect;
+    // Both emission cores drift with the gas currents.
+    vec2 core = (vec2(0.72, 0.46) + vec2(sin(t * 0.08), cos(t * 0.07)) * 0.07) * aspect;
     float coreGlow = exp(-dot(uv - core, uv - core) * 5.5);
-    vec2 lamp = (vec2(0.5) + u_pointer * vec2(0.42, 0.34)) * aspect;
+    vec2 lamp = (vec2(0.57, 0.58) + vec2(cos(t * 0.1), sin(t * 0.06)) * 0.09) * aspect;
     float lampGlow = exp(-dot(uv - lamp, uv - lamp) * 7.0);
     float emission = (coreGlow * 0.85 + lampGlow * 0.5) * (0.45 + 0.55 * f);
     color += silver * emission * 0.55;
@@ -282,6 +283,18 @@
     color += vec3(0.92, 0.94, 1.0) * grain * twinkle * absorption * 0.8;
 
     float alpha = clamp(density * 1.15 + emission * 0.5, 0.0, 1.0);
+    float clearing = 1.0 - min(hollow, 1.0) * 0.84;
+    alpha = clamp(alpha * clearing + shell * 0.42, 0.0, 1.0);
+    color += (mint * 0.6 + steel * 0.35 + silver * 0.25) * shell;
+
+    // Shared rendering/picking mask. There is no second CSS mask or transform
+    // that can make an invisible part of the gas respond to a click.
+    float visibility = sampleUv.x < 0.18
+      ? mix(0.0, 0.38, sampleUv.x / 0.18)
+      : sampleUv.x < 0.42
+        ? mix(0.38, 0.88, (sampleUv.x - 0.18) / 0.24)
+        : mix(0.88, 1.0, clamp((sampleUv.x - 0.42) / 0.24, 0.0, 1.0));
+    alpha *= visibility;
 
     // Light theme renders the same field as a faint pastel wash.
     vec3 paper = vec3(0.976, 0.976, 0.984);
@@ -292,30 +305,35 @@
     // Dither kills gradient banding on wide soft ramps.
     color += (hash(uv * 913.7 + t) - 0.5) * 0.012;
 
+    if (u_picking > 0.5) {
+      // Density excludes emission haze and star grains; holes do not count as gas.
+      gl_FragColor = vec4(density * visibility * clearing, 0.0, 0.0, 1.0);
+      return;
+    }
     gl_FragColor = vec4(color * alpha, alpha);
   }`;
 
   const FRAME_INTERVAL_MS = 1000 / 30;
-  const HOME_SPEED = 0.644;
-  const HOME_PARALLAX_PX = 20;
+  const HOME_SPEED = 2.6;
   const RESOLUTION_SCALE = 0.6;
+  const COMPACT_RESOLUTION_SCALE = 0.4;
   const MAX_PIXEL_RATIO = 1.5;
   const MAX_RENDER_PIXELS = 1_500_000;
+  const BURST_LIFETIME_SECONDS = 1.6;
+  const MIN_VISIBLE_DENSITY = 0.06;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const slowUpdate = window.matchMedia("(update: slow)");
-  const coarsePointer = window.matchMedia("(pointer: coarse)");
   const connection = navigator.connection;
-  const pointer = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
   let renderer = null;
   let frame = 0;
-  let pointerFrame = 0;
   let lastFrame = 0;
   let simulatedTime = Math.random() * 400;
+  let elapsedSeconds = 0;
   let failed = false;
   root.dataset.renderer = "fallback";
 
   const motionAllowed = () => !reducedMotion.matches && !slowUpdate.matches &&
-    !coarsePointer.matches && !connection?.saveData;
+    !connection?.saveData;
 
   function createRenderer() {
     const canvas = document.createElement("canvas");
@@ -334,7 +352,11 @@
     const shaders = [];
     let program = null;
     let buffer = null;
+    let pickTexture = null;
+    let pickFramebuffer = null;
     function dispose() {
+      if (pickTexture) gl.deleteTexture(pickTexture);
+      if (pickFramebuffer) gl.deleteFramebuffer(pickFramebuffer);
       if (buffer) gl.deleteBuffer(buffer);
       if (program) gl.deleteProgram(program);
       shaders.forEach((shader) => gl.deleteShader(shader));
@@ -379,44 +401,103 @@
     const uniforms = {
       resolution: gl.getUniformLocation(program, "u_resolution"),
       time: gl.getUniformLocation(program, "u_time"),
-      pointer: gl.getUniformLocation(program, "u_pointer"),
       theme: gl.getUniformLocation(program, "u_theme"),
+      cssHeight: gl.getUniformLocation(program, "u_cssHeight"),
+      bursts: gl.getUniformLocation(program, "u_bursts[0]"),
+      picking: gl.getUniformLocation(program, "u_picking"),
+      pickUv: gl.getUniformLocation(program, "u_pickUv"),
     };
+
+    // Sample the same gas shader at one pixel only after an eligible click.
+    // A failed picking target disables bursts while autonomous gas continues.
+    pickTexture = gl.createTexture();
+    pickFramebuffer = gl.createFramebuffer();
+    let pickingSupported = false;
+    if (pickTexture && pickFramebuffer) {
+      gl.bindTexture(gl.TEXTURE_2D, pickTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, pickFramebuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pickTexture, 0);
+      pickingSupported = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    let rendered = false;
+    let cssHeight = 1;
+    let nextBurst = 0;
+    const bursts = [];
+    const burstUniforms = new Float32Array(16);
+    const pickedPixel = new Uint8Array(4);
     canvas.addEventListener("webglcontextlost", handleContextLoss);
-    root.insertBefore(canvas, root.querySelector(".atmosphere__cursor-field"));
+    root.insertBefore(canvas, root.querySelector(".atmosphere__scrim"));
 
     return {
       dispose,
       resize() {
+        rendered = false;
         const bounds = canvas.getBoundingClientRect();
-        let scale = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO) * RESOLUTION_SCALE;
+        cssHeight = Math.max(1, bounds.height);
+        const resolutionScale = bounds.width <= 600 ? COMPACT_RESOLUTION_SCALE : RESOLUTION_SCALE;
+        let scale = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO) * resolutionScale;
         scale = Math.min(scale, Math.sqrt(MAX_RENDER_PIXELS / Math.max(1, bounds.width * bounds.height)));
         canvas.width = Math.max(1, Math.floor(bounds.width * scale));
         canvas.height = Math.max(1, Math.floor(bounds.height * scale));
         gl.viewport(0, 0, canvas.width, canvas.height);
       },
       draw() {
+        burstUniforms.fill(0);
+        bursts.forEach((burst, index) => {
+          const age = elapsedSeconds - burst.started;
+          if (age >= BURST_LIFETIME_SECONDS) return;
+          burstUniforms.set([burst.x, burst.y, age, 1], index * 4);
+        });
         gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
         gl.uniform1f(uniforms.time, simulatedTime);
-        gl.uniform2f(uniforms.pointer, pointer.currentX, -pointer.currentY);
         gl.uniform1f(uniforms.theme, 0);
+        gl.uniform1f(uniforms.cssHeight, cssHeight);
+        gl.uniform4fv(uniforms.bursts, burstUniforms);
+        gl.uniform1f(uniforms.picking, 0);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
+        rendered = true;
+      },
+      burstAt(clientX, clientY) {
+        if (!rendered || !pickingSupported || gl.isContextLost()) return false;
+        const bounds = canvas.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) return false;
+        const x = (clientX - bounds.left) / bounds.width;
+        const y = 1 - (clientY - bounds.top) / bounds.height;
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1) return false;
+
+        pickedPixel.fill(0);
+        try {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, pickFramebuffer);
+          gl.viewport(0, 0, 1, 1);
+          gl.uniform1f(uniforms.picking, 1);
+          gl.uniform2f(uniforms.pickUv, x, y);
+          gl.drawArrays(gl.TRIANGLES, 0, 3);
+          gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pickedPixel);
+        } catch {
+          return false;
+        } finally {
+          gl.uniform1f(uniforms.picking, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+
+        const opacity = Number.parseFloat(window.getComputedStyle(canvas).opacity);
+        if (!Number.isFinite(opacity) || (pickedPixel[0] / 255) * opacity < MIN_VISIBLE_DENSITY) return false;
+        bursts[nextBurst] = { x, y, started: elapsedSeconds };
+        nextBurst = (nextBurst + 1) % 4;
+        return true;
       },
     };
-  }
-
-  function resetPointer() {
-    window.cancelAnimationFrame(pointerFrame);
-    pointer.targetX = 0;
-    pointer.targetY = 0;
-    root.style.setProperty("--nebula-pointer-x", "0px");
-    root.style.setProperty("--nebula-pointer-y", "0px");
-    root.style.setProperty("--nebula-far-x", "0px");
-    root.style.setProperty("--nebula-far-y", "0px");
-    root.style.setProperty("--nebula-cursor-x", "72%");
-    root.style.setProperty("--nebula-cursor-y", "48%");
   }
 
   function render(now) {
@@ -425,25 +506,19 @@
     if (now - lastFrame < FRAME_INTERVAL_MS) return;
     const step = Math.min(now - lastFrame, 100) / 1000;
     lastFrame = now;
+    elapsedSeconds += step;
     simulatedTime += step * (0.55 + HOME_SPEED);
-    const inertia = 1 - Math.pow(0.02, step);
-    pointer.currentX += (pointer.targetX - pointer.currentX) * inertia;
-    pointer.currentY += (pointer.targetY - pointer.currentY) * inertia;
     renderer.draw();
   }
 
   function syncMotion() {
     window.cancelAnimationFrame(frame);
-    window.cancelAnimationFrame(pointerFrame);
     frame = 0;
     root.toggleAttribute("data-paused", document.hidden);
     if (!motionAllowed() || failed) {
       renderer?.dispose();
       renderer = null;
       root.dataset.renderer = "fallback";
-      resetPointer();
-      pointer.currentX = 0;
-      pointer.currentY = 0;
       return;
     }
     if (document.hidden) return;
@@ -467,40 +542,34 @@
     syncMotion();
   }
 
+  // A new visibility/preference state may make WebGL available again. Retry
+  // once at that boundary; never allocate replacement contexts in a frame loop.
+  function resumeMotion() {
+    failed = false;
+    syncMotion();
+  }
+
   function resize() {
     if (!renderer) return;
     renderer.resize();
     if (!document.hidden) renderer.draw();
   }
 
-  window.addEventListener("pointermove", (event) => {
-    if (!renderer || document.hidden || !motionAllowed() ||
-        (event.pointerType && event.pointerType !== "mouse")) return;
-    window.cancelAnimationFrame(pointerFrame);
-    pointerFrame = window.requestAnimationFrame(() => {
-      const x = Math.max(-0.5, Math.min(0.5, event.clientX / window.innerWidth - 0.5));
-      const y = Math.max(-0.5, Math.min(0.5, event.clientY / window.innerHeight - 0.5));
-      const offsetX = x * HOME_PARALLAX_PX * -2;
-      const offsetY = y * HOME_PARALLAX_PX * -1.2;
-      root.style.setProperty("--nebula-pointer-x", `${offsetX.toFixed(2)}px`);
-      root.style.setProperty("--nebula-pointer-y", `${offsetY.toFixed(2)}px`);
-      root.style.setProperty("--nebula-far-x", `${(offsetX * -0.34).toFixed(2)}px`);
-      root.style.setProperty("--nebula-far-y", `${(offsetY * -0.34).toFixed(2)}px`);
-      root.style.setProperty("--nebula-cursor-x", `${(x + 0.5) * 100}%`);
-      root.style.setProperty("--nebula-cursor-y", `${(y + 0.5) * 100}%`);
-      pointer.targetX = x;
-      pointer.targetY = y;
-    });
+  // Observe completed left clicks on exposed AEKR layout only. Foreground
+  // content, controls, keyboard activation and touch remain wholly unaffected.
+  window.addEventListener("click", (event) => {
+    if (!renderer || document.hidden || !motionAllowed() || event.button !== 0 ||
+        event.detail === 0 || event.defaultPrevented ||
+        ("pointerType" in event && event.pointerType !== "mouse") ||
+        !(event.target instanceof Element) ||
+        !event.target.matches("body, main, .hero, .section") ||
+        event.target.closest("button, a, input, textarea, select, label, form, header, nav, footer, dialog, [role], [contenteditable], .panel, .modal, .cta-row")) return;
+    renderer.burstAt(event.clientX, event.clientY);
   }, { passive: true });
-  window.addEventListener("pointerout", (event) => {
-    if (event.relatedTarget === null) resetPointer();
-  });
-  window.addEventListener("blur", resetPointer);
-  document.addEventListener("visibilitychange", syncMotion);
-  reducedMotion.addEventListener("change", syncMotion);
-  slowUpdate.addEventListener("change", syncMotion);
-  coarsePointer.addEventListener("change", syncMotion);
-  connection?.addEventListener?.("change", syncMotion);
+  document.addEventListener("visibilitychange", resumeMotion);
+  reducedMotion.addEventListener("change", resumeMotion);
+  slowUpdate.addEventListener("change", resumeMotion);
+  connection?.addEventListener?.("change", resumeMotion);
   new ResizeObserver(resize).observe(root);
   syncMotion();
 })();

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "base_commit": "15604f813e484ef4367cc926a52528ee1578039c",
+  "accreatio_reference": "53343211a2176be487c17fa8f58202146f3eac7e",
+  "scope": "Current preview nebula, official brand lettering, bounded verification and recovery documentation",
+  "outputs": [
+    {
+      "path": "README.md",
+      "bytes": 6632,
+      "sha256": "f1f361b91efa60be0c87c772c006594c328b6af2e9572fb195f134eba2eaa134"
+    },
+    {
+      "path": "docs/master.md",
+      "bytes": 10866,
+      "sha256": "3166c9e0d81de660822f4260d72fddb30f961ecec73cfed9d45ba44e80ab92de"
+    },
+    {
+      "path": "docs/nebula-follow-up-2026-09-04.md",
+      "bytes": 5012,
+      "sha256": "0786244d90fc460bcdbdc27f6f93bee31ec106bf12d57cf5a15db7f30a8400a9"
+    },
+    {
+      "path": "docs/rollback.md",
+      "bytes": 1730,
+      "sha256": "30a8ad76ba692031808710f28309fd8f5fffa8d6c4860f13d89d30221faeed6d"
+    },
+    {
+      "path": "public/404.html",
+      "bytes": 1170,
+      "sha256": "c5b1af9921330eeb99858aa85455ae84c0ccfb933e02d077e11af6eff01e5460"
+    },
+    {
+      "path": "public/index.html",
+      "bytes": 14844,
+      "sha256": "c8a489f8253fd0cebdc8dc87ee4ac41ea923b27fe4143061b27a413faabfa8a2"
+    },
+    {
+      "path": "public/script.js",
+      "bytes": 25735,
+      "sha256": "851aad13d2b4da09b26c11e8f68d305e5728e5280950bd0581d7a1775bc38aaa"
+    },
+    {
+      "path": "public/styles.css",
+      "bytes": 21705,
+      "sha256": "7d51286b622812d2f5f91c29fd68918eeddd435e3352601b16c8e919b05fa6b9"
+    },
+    {
+      "path": "tests/atmosphere.cjs",
+      "bytes": 14022,
+      "sha256": "e1fea9d1586ab71e359b6d3b1267f9de6b6d0f44001bdb49aa3e027bd40fb54b"
+    }
+  ]
+}

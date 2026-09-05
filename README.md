@@ -69,12 +69,19 @@ the field is now keyed out so they composite cleanly over any dark surface.
 If you replace them, keep the transparency — do not re-export onto a solid
 background.
 
+Primary AEKR headings reuse the lettering from the official logo through the
+`.brand-lettering` CSS crop. Preserve the artwork's A/E/K/R shapes and mint dot;
+do not substitute a similar font. Accessible AEKR text remains in the markup.
+
 ### Nebula source attribution
 
 The nebula rendering in `public/script.js` was adapted from Ed's accreatio source
 under his explicit authorization for this website. That portion retains its
 source copyright and reserved rights; the repository's general MIT license does
 not silently relicense accreatio or grant broader reuse rights to its source.
+The current reference is the deployed design-v14 preview at
+`53343211a2176be487c17fa8f58202146f3eac7e`: autonomous currents and left-click gas
+bursts, with the AEKR palette. See [the follow-up verification record](docs/nebula-follow-up-2026-09-04.md).
 
 ## Contact form
 
