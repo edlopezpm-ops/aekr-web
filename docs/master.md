@@ -1,6 +1,6 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; professionalization and visual refresh verified locally for authorized delivery.
+**Status:** Existing public website; professionalization delivered, with an authorized nebula and official-wordmark follow-up.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
@@ -159,6 +159,13 @@ throttle is best effort, not a durable rate limit. Do not promote any of these
 to a verified claim based on repository metadata or the Project Map.
 
 ## Increment evidence
+
+The follow-up requested on 2026-09-04 uses accreatio's deployed design-v14 preview
+at `53343211a2176be487c17fa8f58202146f3eac7e`, including autonomous currents and
+left-click gas bursts. Its preview source differs from the older `main` used in
+the first refresh. Ed also requested the official AEKR lettering in primary
+brand headings. See [the follow-up record](nebula-follow-up-2026-09-04.md) for
+the reference correction, bounded implementation and verification evidence.
 
 See [the 2026-09-04 verification record](verification-2026-09-04.md) for scope,
 review, executed checks and the previous Cloudflare version. The delivery

@@ -1,5 +1,21 @@
 # Restore the previous website
 
+## Before the nebula and official-wordmark follow-up
+
+Source: `15604f813e484ef4367cc926a52528ee1578039c`.
+Recovery tag: `rollback/aekr-web-pre-motion-fix-2026-09-04`.
+The sibling `aekr-web-backups` directory contains a second verified Git bundle,
+source archive, synchronization receipt, checksums and recovery instructions in
+`pre-motion-fix-2026-09-04`. Isolated bundle recovery returned the exact source
+commit and passed Git integrity validation. The original pre-refresh backup is
+preserved separately.
+
+```sh
+npx wrangler rollback 538a9154-dd94-4e54-b958-56630909ad20 --name aekr-web --message "Restore website before nebula motion follow-up"
+```
+
+## Before the original professionalization and visual refresh
+
 Recovery source: `17b712c1fdbefe43c64abc2c9c36b3a4bfa50eee`.
 The remote tag `rollback/aekr-web-pre-refresh-2026-09-04` preserves that baseline.
 Ed also has a local verified Git bundle, source archive and checksum manifest in
