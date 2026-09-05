@@ -5,6 +5,23 @@
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
 
+## Heading color refinement — 2026-09-05
+
+Ed requested the AEKR green for section titles, lifecycle stage names and the
+principle-card titles during delivery. Minimum sufficient change: reuse the
+existing `--accent` token in the four existing heading rules, including the
+control-model concept headings. No markup, body copy, dimensions, artwork,
+animation, contact behavior or infrastructure changes are needed. PR #8 source
+`f88ade3` and its active Cloudflare version
+`7e1256c7-bbc3-42a5-8081-09e734ff2a0d` are preserved by the new recovery tag
+`rollback/aekr-web-pre-heading-colors-2026-09-05` and verified Git bundle.
+
+The output inventory is four CSS color declarations and this decision record;
+there is no added branch, abstraction, dependency or interface. Verification is
+bounded to computed heading/body colors and browser screenshots, existing
+repository checks, separate delta review and merged-source/live-asset readback.
+All functional evidence for the unchanged PR #8 increment remains applicable.
+
 ## Hero, contact and lifecycle refinement — 2026-09-05
 
 Ed approved the PR #6 experience and authorized a bounded follow-up through PR,
