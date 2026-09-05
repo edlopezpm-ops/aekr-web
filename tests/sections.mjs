@@ -64,8 +64,17 @@ async function active(page, id) {
   assert.equal(state.visible, 1); assert.equal(state.accessible, 1);
   assert.equal(state.current, id === 'main' ? null : '#' + id);
 }
+async function sectionLink(page, id) {
+  const link = page.locator(`.section-nav a[href="#${id}"]`);
+  if (!await link.isVisible()) await page.locator('.section-menu-toggle').click();
+  return link;
+}
 async function go(page, id) {
-  await page.locator(id === 'main' ? '.wordmark' : `.section-nav a[href="#${id}"]`).click();
+  if (id === 'main') {
+    if (await page.locator('main').getAttribute('data-active-section') !== 'main') {
+      await page.locator(await page.locator('.wordmark').isVisible() ? '.wordmark' : '.brand-dock').click();
+    }
+  } else await (await sectionLink(page, id)).click();
   await active(page, id);
 }
 async function edge(page, bottom) {
@@ -83,8 +92,8 @@ async function geometry(page) {
       contentWidth: document.querySelector('.section-panel.is-active').scrollWidth,
       footer: { top: f.top, bottom: f.bottom }, headerBottom: h.bottom,
       scrollbar: getComputedStyle(document.querySelector('.section-panel.is-active')).scrollbarWidth,
-      controls: [...document.querySelectorAll('.wordmark, .header-cta, .section-nav a, .brand-dock')]
-        .filter(el => getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).display !== 'none').map(el => {
+      controls: [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta, .section-nav a, .brand-dock')]
+        .filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => {
         const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       }),
       copyright: document.querySelector('.footer-legal').textContent.trim() };
@@ -119,7 +128,7 @@ async function brandJourney(page, label) {
   await go(page, 'main');
   const home = await brandFrame(page);
   assert(home.hero.visible && !home.traveler.visible, 'Home presents one original symbol');
-  await page.locator('.section-nav a[href="#practice"]').click();
+  await (await sectionLink(page, 'practice')).click();
   await page.waitForTimeout(180);
   const moving = await brandFrame(page);
   assert(moving.transitioning && moving.traveler.visible && !moving.hero.visible, 'One crisp symbol remains visible in flight');
@@ -174,8 +183,8 @@ try {
     assert.equal(currentScript, sources['script.js'],
       'The atmosphere, header and contact script remain byte-identical');
     const currentSections = await readFile(path.join(root, 'public/sections.js'), 'utf8');
-    assert.equal(currentSections.split('/* Hero storytelling')[0].trim(), sources['sections.js'].split('/* Hero storytelling')[0].trim(),
-      'The approved section and symbol transition controller remains byte-identical');
+    assert.equal(currentSections.split('/* Hero storytelling')[1], sources['sections.js'].split('/* Hero storytelling')[1],
+      'The approved particle engine remains byte-identical');
     const oldPage = await open({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' }, '', sources);
     const identitySizes = p => p.evaluate(() => ({
       symbol: document.querySelector('.hero-mark').getBoundingClientRect().width,
@@ -197,12 +206,27 @@ try {
     });
     const oldLifecycle = await lifecycleSize(oldPage), newLifecycle = await lifecycleSize(page);
     assert(newLifecycle.aside && newLifecycle.fits && newLifecycle.centerOffset < 1, 'Interferometry is centered beside the stages');
-    assert(newLifecycle.width > oldLifecycle.width && newLifecycle.height < oldLifecycle.height, 'Interferometry is wider and shorter');
+    assert.deepEqual(newLifecycle, oldLifecycle, 'Desktop Interferometry retains its approved geometry');
     const gaps = p => p.evaluate(() => ['.hero-story', '.hero-tagline'].map(selector => parseFloat(getComputedStyle(document.querySelector(selector)).marginTop)));
     const oldGaps = await gaps(oldPage), newGaps = await gaps(page);
-    assert(newGaps.every((gap, i) => gap > oldGaps[i]), 'Both sides of the phrase have more breathing room');
+    assert.deepEqual(newGaps, oldGaps, 'Desktop hero spacing is unchanged');
     assert.equal((await page.locator('.contact-home').textContent()).trim(), 'Back');
-    console.log('PASS: preserved identity and approved boundaries; wider/shorter card, increased spacing and Back', { oldLifecycle, newLifecycle });
+    const desktopLayout = p => p.evaluate(() => {
+      const elements = document.querySelectorAll('.site-header, .site-footer, .section-nav, .section-panel.is-active h2, .section-panel.is-active h3, .section-panel.is-active p, .section-panel.is-active li, .section-panel.is-active input, .section-panel.is-active textarea');
+      return [...elements].map(el => {
+        const r = el.getBoundingClientRect(), style = getComputedStyle(el);
+        return { text: el.textContent.trim(), box: [r.x, r.y, r.width, r.height].map(n => Math.round(n * 100) / 100),
+          color: style.color, fontSize: style.fontSize, lineHeight: style.lineHeight };
+      });
+    });
+    for (const id of ids.slice(1)) {
+      await go(oldPage, id); await go(page, id);
+      const before = await desktopLayout(oldPage), after = await desktopLayout(page);
+      // The compact-only Menu button is hidden on desktop but part of header text.
+      before[0].text = after[0].text = '';
+      assert.deepEqual(after, before, `Desktop ${id} keeps its layout and typography`);
+    }
+    console.log('PASS: desktop appearance, approved identity, particle/atmosphere/contact boundaries and Back preserved');
     await oldPage.context().close();
   }
   const heroPage = await open({ viewport: { width: 1440, height: 1000 } }, '', {}, () => {
@@ -300,6 +324,7 @@ try {
   await geometry(heroPage);
   await phase(heroPage, 'dispersing');
   assert((await particlePixels(heroPage)).count > 100, 'Resizing and enlarged wrapping rebuild usable glyph targets');
+  await geometry(heroPage);
   await heroPage.locator('.hero-pause').focus();
   await heroPage.emulateMedia({ reducedMotion: 'reduce' });
   await heroPage.waitForFunction(() => document.querySelector('.hero-story').hidden);
@@ -390,7 +415,7 @@ try {
   await edge(page, false); await page.keyboard.press('PageUp'); await active(page, 'main');
   console.log('PASS: history, deep links, keyboard, form draft and failed-submit preservation');
 
-  await page.locator('.section-nav a[href="#practice"]').click();
+  await (await sectionLink(page, 'practice')).click();
   await page.waitForTimeout(100);
   const unrevealed = await page.locator('#practice').evaluate(el => Number(getComputedStyle(el).opacity));
   await page.locator('.section-nav a[href="#orchestration"]').click({ force: true });
@@ -398,7 +423,7 @@ try {
   assert(interrupted <= unrevealed + 0.05, 'Rapid navigation cannot flash text that has not appeared yet');
   await active(page, 'orchestration');
   await go(page, 'main');
-  await page.locator('.section-nav a[href="#practice"]').click();
+  await (await sectionLink(page, 'practice')).click();
   await page.waitForTimeout(170);
   const beforeReverse = await brandFrame(page);
   // A user can activate a moving header control; skip Playwright's automatic
@@ -422,8 +447,52 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   console.log('PASS: interrupted flight, preference change and viewport change preserve the current destination');
 
-  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 360, height: 800 }, { width: 430, height: 932 }, { width: 844, height: 390 }]) {
     const mobile = await open({ viewport, isMobile: true, hasTouch: true });
+    await active(mobile, 'main');
+    const shell = await mobile.evaluate(() => {
+      const hero = document.querySelector('.hero'), panel = hero.getBoundingClientRect();
+      const style = getComputedStyle(hero), mark = document.querySelector('.hero-mark').getBoundingClientRect();
+      const cta = hero.querySelector('.btn-primary').getBoundingClientRect(), story = hero.querySelector('.hero-story').getBoundingClientRect();
+      return { readingWidth: hero.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+        center: mark.x + mark.width / 2, footer: document.querySelector('.site-footer').getBoundingClientRect().height,
+        header: document.querySelector('.site-header').getBoundingClientRect().height,
+        propositionVisible: story.top >= panel.top && story.bottom <= panel.bottom,
+        ctaVisible: cta.top >= panel.top && cta.bottom <= panel.bottom };
+    });
+    assert(shell.readingWidth >= viewport.width - 40, 'Compact panels reclaim the rail gutter');
+    if (viewport.width === 320) assert(shell.readingWidth >= 288);
+    if (viewport.width < 600) assert(Math.abs(shell.center - viewport.width / 2) <= 2, 'Portrait brand is centered');
+    assert(shell.footer <= 52 && shell.header === 60, 'Compact chrome leaves space for reading');
+    if ([390, 844].includes(viewport.width)) assert(shell.propositionVisible && shell.ctaVisible, 'Proposition and primary CTA are initially visible');
+    const toggle = mobile.locator('.section-menu-toggle'), menu = mobile.locator('.section-nav');
+    assert(await toggle.isVisible()); assert(await menu.isHidden());
+    await toggle.tap();
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+    const choices = await menu.locator('a').evaluateAll(links => links.map(link => ({
+      height: link.getBoundingClientRect().height, label: link.querySelector('.section-nav__label').textContent.trim(),
+      opacity: Number(getComputedStyle(link.querySelector('.section-nav__label')).opacity),
+    })));
+    assert.equal(choices.length, 6);
+    assert(choices.every(choice => choice.height >= 44 && choice.label && choice.opacity === 1), 'Every mobile destination is named with a usable touch target');
+    await menu.locator('a').first().focus();
+    await mobile.keyboard.press('End'); await mobile.keyboard.press('PageDown');
+    assert.equal(await mobile.locator('main').getAttribute('data-active-section'), 'main', 'Menu keys never route the underlying section');
+    const menuBox = await menu.boundingBox();
+    await mobile.mouse.move(menuBox.x + 30, menuBox.y + 30); await mobile.mouse.wheel(0, 180);
+    await mobile.waitForTimeout(100);
+    assert.equal(await mobile.locator('main').getAttribute('data-active-section'), 'main', 'Menu wheel input stays in the disclosure');
+    await mobile.keyboard.press('Escape');
+    assert(await menu.isHidden());
+    assert(await toggle.evaluate(el => el === document.activeElement), 'Escape restores focus to Menu');
+    assert(await menu.evaluate(el => el.inert), 'Closed menu links are outside keyboard navigation');
+    await toggle.tap();
+    await mobile.mouse.click(viewport.width - 3, viewport.height - 3);
+    assert(await menu.isHidden());
+    assert(await toggle.evaluate(el => el === document.activeElement), 'Outside cancellation restores focus');
+    await toggle.tap(); await menu.locator('a[href="#practice"]').tap(); await active(mobile, 'practice');
+    assert(await menu.isHidden());
+    assert(await mobile.locator('#practice').evaluate(el => el === document.activeElement), 'Selecting a destination transfers focus to its panel');
     if (viewport.width === 390) await brandJourney(mobile, 'mobile-brand');
     for (const id of ids) {
       await go(mobile, id); await geometry(mobile);
@@ -433,6 +502,18 @@ try {
       if (shots && viewport.width === 390) await mobile.screenshot({ path: path.join(shots, `mobile-${id}.png`) });
     }
     await go(mobile, 'lifecycle');
+    const flow = await mobile.evaluate(() => {
+      const list = document.querySelector('.lifecycle').getBoundingClientRect();
+      const layer = document.querySelector('.lifecycle-layer').getBoundingClientRect();
+      return { width: list.width, below: layer.top >= list.bottom,
+        aligned: [...document.querySelectorAll('.phase-body p')].every(el => Math.abs(el.getBoundingClientRect().left - list.left) < 1) };
+    });
+    assert(flow.width >= viewport.width - 40 && flow.below && flow.aligned,
+      'Compact lifecycle retains its full column and places verification below stage seven, including landscape');
+    if (viewport.width < 600) {
+      const descriptions = await mobile.locator('.phase-body p').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width));
+      assert(descriptions.every(width => width >= viewport.width - 40), 'Lifecycle descriptions use the reading column below the number/title');
+    }
     await mobile.locator('.section-panel.is-active').evaluate(p => { p.scrollTop = p.scrollHeight - p.clientHeight - 25; });
     await mobile.waitForTimeout(300);
     await mobile.mouse.move(100, viewport.height / 2);
@@ -453,7 +534,38 @@ try {
     await active(mobile, 'lifecycle');
     await mobile.context().close();
   }
-  console.log('PASS: narrow/short mobile layouts, overflow reachability and touch boundary navigation');
+  console.log('PASS: centered compact layouts, named disclosure, first-view message, full-width lifecycle and trusted touch boundaries');
+
+  const breakpoint = await open({ viewport: { width: 390, height: 844 } });
+  await breakpoint.locator('.section-menu-toggle').click();
+  await breakpoint.setViewportSize({ width: 1440, height: 1000 });
+  await breakpoint.waitForTimeout(150);
+  assert(await breakpoint.locator('.section-menu-toggle').isHidden());
+  assert(await breakpoint.locator('.wordmark').evaluate(el => el === document.activeElement), 'Desktop resize transfers focus to the visible home control');
+  assert(await breakpoint.locator('.section-nav').isVisible());
+  await breakpoint.locator('.section-nav a').first().focus();
+  await breakpoint.setViewportSize({ width: 320, height: 568 });
+  await breakpoint.waitForTimeout(150);
+  assert(await breakpoint.locator('.section-nav').isHidden());
+  assert(await breakpoint.locator('.section-menu-toggle').evaluate(el => el === document.activeElement), 'Compact resize recovers focus from hidden rail links');
+  await breakpoint.context().close();
+  console.log('PASS: breakpoint changes clear the disclosure and preserve a visible focus target');
+
+  const liveText = await open({ viewport: { width: 320, height: 568 }, reducedMotion: 'reduce' }, '#lifecycle');
+  await active(liveText, 'lifecycle');
+  await liveText.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  // A live text-size change must work without a resize event to repair the header.
+  await liveText.waitForFunction(() => {
+    const dock = document.querySelector('.brand-dock').getBoundingClientRect();
+    return [...document.querySelectorAll('.section-menu-toggle, .header-cta')].every(el => {
+      const r = el.getBoundingClientRect();
+      return Math.min(dock.right, r.right) <= Math.max(dock.left, r.left) || Math.min(dock.bottom, r.bottom) <= Math.max(dock.top, r.top);
+    });
+  }, null, { timeout: 2000 });
+  await geometry(liveText);
+  assert(await liveText.locator('.section-panel.is-active').evaluate(el => el.clientHeight >= 350));
+  await liveText.context().close();
+  console.log('PASS: live text enlargement reflows header controls without a viewport resize');
 
   {
     const contactFlow = await open({
@@ -658,12 +770,18 @@ try {
   await reduced.setViewportSize({ width: 320, height: 568 });
   for (const id of ids) {
     await go(reduced, id); await geometry(reduced); await edge(reduced, true);
+    assert(await reduced.locator('.section-panel.is-active').evaluate(el => el.clientHeight >= 350),
+      'The compact shell preserves a useful reading viewport at 200% text');
+    if (id === 'lifecycle') {
+      assert(await reduced.locator('.phase-body p').evaluateAll(elements => elements.every(el => el.getBoundingClientRect().width >= 260)),
+        'Enlarged lifecycle prose retains its full reading width');
+    }
     if (id !== 'main') {
       const frame = await brandFrame(reduced);
       assert(Math.abs(frame.traveler.cx - frame.width / 2) <= 1);
       const collides = await reduced.evaluate(() => {
         const mark = document.querySelector('.brand-dock').getBoundingClientRect();
-        return [...document.querySelectorAll('.wordmark, .header-cta')].some(el => {
+        return [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta')].filter(el => el.checkVisibility()).some(el => {
           const r = el.getBoundingClientRect();
           return Math.min(mark.right, r.right) > Math.max(mark.left, r.left) && Math.min(mark.bottom, r.bottom) > Math.max(mark.top, r.top);
         });
@@ -673,7 +791,7 @@ try {
   }
   await reduced.emulateMedia({ reducedMotion: 'no-preference' });
   await go(reduced, 'main');
-  await reduced.locator('.section-nav a[href="#practice"]').click();
+  await (await sectionLink(reduced, 'practice')).click();
   await reduced.waitForTimeout(80);
   const contactUnclipped = await reduced.evaluate(() => {
     const el = document.querySelector('.header-cta'), r = el.getBoundingClientRect();

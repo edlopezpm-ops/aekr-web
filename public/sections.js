@@ -6,16 +6,18 @@
   const header = document.querySelector('.site-header');
   const footer = document.querySelector('.site-footer');
   const navigation = document.querySelector('.section-nav');
+  const menuToggle = document.querySelector('.section-menu-toggle');
   const status = document.querySelector('.section-status');
   const heroMark = document.querySelector('.hero-mark');
   const dock = document.querySelector('.brand-dock');
   const atmosphere = document.querySelector('.atmosphere');
   const panels = Array.from(main?.querySelectorAll(':scope > section') || []);
   const links = Array.from(navigation?.querySelectorAll('a') || []);
-  if (!main || !header || !footer || !status || !heroMark || !dock || !atmosphere || panels.length !== 7 || links.length !== 6) return;
+  if (!main || !header || !footer || !menuToggle || !status || !heroMark || !dock || !atmosphere || panels.length !== 7 || links.length !== 6) return;
   if (typeof ResizeObserver !== 'function' || !('inert' in HTMLElement.prototype) || !Element.prototype.animate) return;
 
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const compact = window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1024px) and (max-height: 560px)');
   const editable = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
   const controls = `${editable}, button, a`;
   let current = 0;
@@ -29,6 +31,7 @@
   let touch = null;
   let animationId = 0;
   let animations = [];
+  let menuOpen = false;
 
   const traveler = heroMark.cloneNode(false);
   traveler.className = 'brand-traveler';
@@ -64,9 +67,27 @@
 
   function fitHeader() {
     const mark = dock.getBoundingClientRect();
-    const wordmark = header.querySelector('.wordmark').getBoundingClientRect();
+    const left = (compact.matches ? menuToggle : header.querySelector('.wordmark')).getBoundingClientRect();
     const contact = header.querySelector('.header-cta').getBoundingClientRect();
-    root.classList.toggle('brand-header-wrapped', current !== 0 && (wordmark.right + 12 > mark.left || contact.left - 12 < mark.right));
+    root.classList.toggle('brand-header-wrapped', current !== 0 && (left.right + 12 > mark.left || contact.left - 12 < mark.right));
+  }
+
+  function setMenu(open, returnFocus = false) {
+    menuOpen = compact.matches && open;
+    menuToggle.setAttribute('aria-expanded', String(menuOpen));
+    navigation.hidden = compact.matches && !menuOpen;
+    navigation.inert = navigation.hidden;
+    if (returnFocus) menuToggle.focus({ preventScroll: true });
+  }
+
+  function updateCompact() {
+    const focused = document.activeElement;
+    const wordmark = header.querySelector('.wordmark');
+    root.classList.toggle('sections-compact', compact.matches);
+    setMenu(false);
+    if (compact.matches && (focused === wordmark || navigation.contains(focused))) menuToggle.focus({ preventScroll: true });
+    else if (!compact.matches && focused === menuToggle) wordmark.focus({ preventScroll: true });
+    settleMotion();
   }
 
   function placeTraveler(rect) {
@@ -138,13 +159,15 @@
 
   function show(index, { history = true, focus = false, end = false, initial = false } = {}) {
     if (index < 0 || index >= panels.length) return false;
+    const menuHadFocus = menuOpen && navigation.contains(document.activeElement);
+    setMenu(false);
     const outgoing = panels[current];
     const incoming = panels[index];
     const changed = index !== current;
-    const moveFocus = focus || (changed && outgoing.contains(document.activeElement));
+    const moveFocus = focus || menuHadFocus || (changed && outgoing.contains(document.activeElement));
     if (!changed && !initial) {
       incoming.scrollTop = 0;
-      if (focus) incoming.focus({ preventScroll: true });
+      if (moveFocus) incoming.focus({ preventScroll: true });
       return false;
     }
     const markStart = (traveler.hidden ? heroMark : traveler).getBoundingClientRect();
@@ -190,6 +213,8 @@
   });
   panels[0].setAttribute('aria-label', 'AEKR introduction');
   root.classList.add('sections-enabled');
+  root.classList.toggle('sections-compact', compact.matches);
+  setMenu(false);
   measureViewport();
   show(Math.max(0, indexForHash(location.hash)), { history: false, initial: true });
   window.history.scrollRestoration = 'manual';
@@ -202,19 +227,27 @@
   });
   observer.observe(header);
   observer.observe(footer);
+  observer.observe(menuToggle);
+  observer.observe(header.querySelector('.header-cta'));
   window.addEventListener('resize', settleMotion, { passive: true });
   window.visualViewport?.addEventListener('resize', settleMotion, { passive: true });
   window.visualViewport?.addEventListener('scroll', measureViewport, { passive: true });
   motion.addEventListener('change', settleMotion);
+  compact.addEventListener('change', updateCompact);
+  menuToggle.addEventListener('click', () => setMenu(!menuOpen));
+
+  document.addEventListener('focusin', event => {
+    if (menuOpen && !header.contains(event.target) && !navigation.contains(event.target)) setMenu(false);
+  });
 
   document.addEventListener('click', event => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     const link = event.target.closest('a[href^="#"]');
-    if (!link) return;
-    const index = indexForHash(link.hash);
-    if (index < 0) return;
-    event.preventDefault();
-    show(index, { focus: link.classList.contains('skip-link') });
+    const index = link ? indexForHash(link.hash) : -1;
+    if (index >= 0) {
+      event.preventDefault();
+      show(index, { focus: menuOpen || link.classList.contains('skip-link') || (compact.matches && navigation.contains(link)) });
+    } else if (menuOpen && !navigation.contains(event.target) && !menuToggle.contains(event.target)) setMenu(false, true);
   });
 
   function followHistory() {
@@ -225,6 +258,10 @@
   window.addEventListener('hashchange', followHistory);
 
   window.addEventListener('wheel', event => {
+    if (menuOpen && !event.ctrlKey && !event.metaKey) {
+      if (!navigation.contains(event.target)) event.preventDefault();
+      return;
+    }
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.target.closest(editable)) return;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
     if (navigation.contains(event.target) && navigation.scrollHeight > navigation.clientHeight) return;
@@ -266,6 +303,10 @@
   }, { passive: false });
 
   document.addEventListener('keydown', event => {
+    if (menuOpen) {
+      if (event.key === 'Escape') { event.preventDefault(); setMenu(false, true); }
+      return;
+    }
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.target.closest(`${editable}, button`)) return;
     const direction = ['ArrowDown', 'PageDown'].includes(event.key) || (event.key === ' ' && !event.shiftKey) ? 1
       : ['ArrowUp', 'PageUp'].includes(event.key) || (event.key === ' ' && event.shiftKey) ? -1 : 0;
@@ -291,7 +332,7 @@
 
   document.addEventListener('touchstart', event => {
     touch = null;
-    if (event.touches.length !== 1 || event.target.closest(controls)) return;
+    if (menuOpen || event.touches.length !== 1 || event.target.closest(controls)) return;
     const point = event.touches[0];
     touch = {
       x: point.clientX, y: point.clientY, index: current,

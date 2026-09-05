@@ -1147,7 +1147,8 @@ main {
    ========================================================================== */
 
 .section-nav,
-.brand-dock {
+.brand-dock,
+.section-menu-toggle {
   display: none;
 }
 
@@ -1446,62 +1447,6 @@ main {
   }
 }
 
-@media (max-width: 767px) {
-  .sections-enabled .site-header {
-    gap: 12px;
-    padding: 0.5rem 20px;
-    min-height: 60px;
-  }
-
-  .sections-enabled.brand-docked .site-header {
-    min-height: 92px;
-  }
-
-  .sections-enabled .brand-dock {
-    top: 14px;
-    width: 64px;
-    height: 64px;
-  }
-
-  .sections-enabled.brand-header-wrapped .site-header {
-    padding-top: 90px;
-  }
-
-  .sections-enabled .wordmark {
-    width: 92px;
-  }
-
-  .sections-enabled .header-cta {
-    padding-inline: 14px;
-  }
-
-  .sections-enabled .section-panel {
-    padding: 1.25rem 64px 1.75rem 20px;
-  }
-
-  .sections-enabled .principles li {
-    padding: 20px;
-  }
-
-  .section-nav a {
-    width: 44px;
-  }
-
-  .section-nav__stroke {
-    width: 28px;
-  }
-
-  .section-nav a[aria-current="location"] .section-nav__stroke,
-  .section-nav a:hover .section-nav__stroke,
-  .section-nav a:focus-visible .section-nav__stroke {
-    width: 38px;
-  }
-
-  .sections-enabled .contact-form {
-    padding: 1rem;
-  }
-}
-
 @media (max-height: 560px) {
   .sections-enabled .site-header {
     padding-block: 0.35rem;
@@ -1521,6 +1466,320 @@ main {
 
   .sections-enabled .section-nav {
     gap: 0;
+  }
+}
+
+/* One compact shell reuses the desktop anchors and selected section. The
+   controller resolves the same narrow/coarse-landscape condition for focus. */
+.sections-enabled .section-nav[hidden] {
+  display: none;
+}
+
+.sections-enabled.sections-compact .site-header {
+  gap: 12px;
+  padding: 8px 20px;
+  min-height: 60px;
+}
+
+.sections-enabled.sections-compact.brand-docked .site-header {
+  min-height: 76px;
+}
+
+.sections-enabled.sections-compact .site-header.header-in-motion,
+.sections-enabled.sections-compact.brand-docked .site-header.header-in-motion {
+  min-height: 0;
+}
+
+.sections-enabled.sections-compact .brand-dock {
+  top: 12px;
+  width: 52px;
+  height: 52px;
+}
+
+.sections-enabled.sections-compact.brand-header-wrapped .site-header {
+  padding-top: 72px;
+}
+
+.sections-enabled.sections-compact .wordmark {
+  display: none;
+}
+
+.sections-enabled.sections-compact .section-menu-toggle,
+.sections-enabled.sections-compact .header-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.sections-enabled.sections-compact .section-menu-toggle[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.sections-enabled.sections-compact .section-nav {
+  top: calc(var(--section-viewport-top, 0px) + var(--section-header-height, 60px) + 4px);
+  right: 16px;
+  left: 16px;
+  transform: none;
+  gap: 4px;
+  max-height: max(1px, calc(var(--section-viewport-height, 100dvh) - var(--section-header-height, 60px) - var(--section-footer-height, 48px) - 12px));
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-panel) 96%, transparent);
+  box-shadow: 0 16px 36px #0008;
+  backdrop-filter: blur(18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
+}
+
+.sections-enabled.sections-compact .section-nav a {
+  justify-content: flex-start;
+  flex-shrink: 0;
+  gap: 14px;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.sections-enabled.sections-compact .section-nav a[aria-current="location"] {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.sections-enabled.sections-compact .section-nav__stroke {
+  flex: 0 0 24px;
+  width: 24px;
+}
+
+.sections-enabled.sections-compact .section-nav__label {
+  position: static;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  opacity: 1;
+  transform: none;
+  overflow-wrap: anywhere;
+}
+
+.sections-enabled.sections-compact .section-panel {
+  padding: 20px 20px 28px;
+}
+
+.sections-enabled.sections-compact .site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 48px;
+  padding: 6px 16px max(6px, env(safe-area-inset-bottom));
+}
+
+.sections-enabled.sections-compact .provenance {
+  margin: 0;
+}
+
+.sections-enabled.sections-compact .provenance img {
+  width: 120px;
+}
+
+.sections-enabled.sections-compact .footer-legal {
+  flex-shrink: 0;
+  margin: 0 !important;
+}
+
+.sections-enabled.sections-compact .hero-mark {
+  margin-bottom: 20px;
+}
+
+.sections-enabled.sections-compact .hero-expansion {
+  margin-top: 8px;
+}
+
+.sections-enabled.sections-compact .hero .eyebrow {
+  margin-top: 20px;
+}
+
+.sections-enabled.sections-compact .hero-story {
+  padding-inline: 0;
+  margin-top: 24px;
+  overflow: clip;
+  overflow-clip-margin: 16px;
+}
+
+.sections-enabled.sections-compact .hero-pause {
+  position: static;
+  margin: 4px auto 0;
+}
+
+.sections-enabled.sections-compact .hero-tagline,
+.sections-enabled.sections-compact .cta-row {
+  margin-top: 20px;
+}
+
+.sections-enabled.sections-compact .cta-row {
+  width: 100%;
+  gap: 12px;
+}
+
+.sections-enabled.sections-compact .cta-row .btn {
+  flex-basis: 100%;
+  min-height: 48px;
+}
+
+.sections-enabled.sections-compact .principles li,
+.sections-enabled.sections-compact .contact-form,
+.sections-enabled.sections-compact .term {
+  padding: 16px;
+}
+
+.sections-enabled.sections-compact .lifecycle-layout {
+  display: block;
+}
+
+.sections-enabled.sections-compact .lifecycle-layout > .lifecycle {
+  width: auto;
+  margin-top: 0;
+}
+
+.sections-enabled.sections-compact .lifecycle::before {
+  display: none;
+}
+
+.sections-enabled.sections-compact .phase {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  padding-bottom: 24px;
+}
+
+.sections-enabled.sections-compact .phase:last-child {
+  padding-bottom: 0;
+}
+
+.sections-enabled.sections-compact .phase-body {
+  display: contents;
+}
+
+.sections-enabled.sections-compact .phase-index {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+
+.sections-enabled.sections-compact .phase-body h3 {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+}
+
+.sections-enabled.sections-compact .phase-body p {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+}
+
+.sections-enabled.sections-compact .lifecycle-layout > .lifecycle-layer {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  transform: none;
+  display: block;
+  margin-top: 24px;
+  padding: 16px;
+}
+
+@media (max-width: 320px) {
+  .sections-enabled.sections-compact .section-panel {
+    padding-inline: 16px;
+  }
+
+  .sections-enabled.sections-compact .site-header {
+    padding-inline: 16px;
+  }
+}
+
+@media (pointer: coarse) and (min-width: 600px) and (max-width: 1024px) and (max-height: 560px) {
+  .sections-enabled.sections-compact .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-rows: auto auto auto auto;
+    align-content: start;
+    align-items: center;
+    justify-items: center;
+    gap: 5px 24px;
+    padding-block: 12px 20px;
+  }
+
+  .sections-enabled.sections-compact .hero-mark {
+    grid-column: 1;
+    grid-row: 1;
+    width: 88px;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .hero-title {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .sections-enabled.sections-compact .hero-expansion {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .hero .eyebrow {
+    grid-column: 1;
+    grid-row: 4;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .hero-story,
+  .sections-enabled.sections-compact .hero-lede:not(.visually-hidden) {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .hero-tagline {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .cta-row {
+    grid-column: 2;
+    grid-row: 3;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+
+  .sections-enabled.sections-compact .cta-row .btn {
+    flex: 1 1 0;
+    padding-inline: 12px;
   }
 }
 
