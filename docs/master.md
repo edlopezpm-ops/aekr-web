@@ -1,9 +1,98 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; atomic phrase formation and bounded layout refinement.
+**Status:** Existing public website; mobile experience refinement with desktop preservation.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Mobile experience refinement — 2026-09-05
+
+Ed authorized a complete mobile UI/UX review, implementation of its recommendations,
+validation and delivery through a new PR, kommiBo review and merge. Standing
+deployment authority remains applicable. Base `0ac5959` is the verified PR #10
+release; a restored Git bundle and `rollback/aekr-web-pre-mobile-revamp-2026-09-05`
+preserve it, alongside the exact PR #4 recovery point.
+
+Before implementation: separate design and navigation reviews inspected all seven
+views at 320/360/390/430 px and touch landscape 844 x 390, with enlarged text and
+reduced motion. The fixed rail consumes the reading width: at 320 px the panel
+has 236 px and the phrase only 168 px. The hero is displaced 22 px from center;
+landscape initially exposes branding without explanatory content. Touch users
+cannot see the six rail destinations, and short-screen targets shrink to 30 px.
+Existing section selection, native inner scrolling, history, focus/inert and
+contact behavior pass. Their working contracts should be reused.
+
+The minimum sufficient change is one compact presentation of the existing shell,
+not a second mobile router or duplicate section model. At widths up to 767 px,
+and coarse-pointer landscape up to 1024 x 560, reuse the six anchors in a named
+disclosure below the header. One Menu toggle replaces the small header wordmark
+in this mode; Contact remains on the right and the official traveling symbol
+remains centered. Escape, outside selection and section navigation close the
+disclosure with appropriate focus. Its own scroll area preserves 44 px targets
+in short viewports. Centered content removes the reserved rail gutter, the header
+uses a smaller dock, and the compact footer retains the banner and copyright.
+Responsive hero, card and form spacing use existing content and CSS boundaries.
+Desktop keeps its rail, geometry and approved appearance.
+
+The compact hero removes the phrase's side inset and gives Pause its own 44 px
+row. Physical 20–28 px spacing preserves breathing room when text is enlarged.
+Portrait retains the approved brand sizes; short touch landscape uses existing
+hero nodes in two columns so identity, the proposition and primary CTA can share
+the first view. Cards/forms use 16 px internal padding. Lifecycle descriptions
+span the reading width below their number/title row, eliminating the persistent
+number-column gutter. Small/enlarged views retain inner scrolling and complete
+text rather than reducing font sizes to force everything into one screen.
+The proposed visible panel scrollbar is excluded to preserve Ed's approved
+scrollbar-free section experience; native inner scrolling remains available.
+
+Search/reuse decision: existing media queries, DOM anchors, section controller,
+viewport measurement and CSS layout cover the behavior. Native button semantics
+plus one explicit expanded state supply the missing disclosure; no library,
+second renderer, route, dependency, API or infrastructure setting is needed.
+Implementation is bounded to the existing HTML/CSS/navigation boundary, browser
+tests and this guide. The particle engine, nebula, contact handler, copy and
+artwork remain outside scope. Verification compares desktop preservation and
+mobile width/centering, named navigation, keyboard/touch/focus, short viewports,
+200% text and existing golden/failure paths. Separate visual review checks the
+settled mobile views and actual transitions, not only screenshots during motion.
+
+Implementation result: one Menu button controls the existing six anchors. The
+same controller handles disclosure state, focus recovery and input isolation;
+closed links are hidden and inert. The existing ResizeObserver now also watches
+the two header controls, so changing text size reflows their layout without a
+viewport resize. The compact presentation is selected once from the declared
+media query. CSS centers the reading column, reduces fixed chrome, places Pause
+below the phrase, and uses the existing hero nodes in short-landscape columns.
+Lifecycle descriptions span below their number/title, with verification after
+the final stage. Desktop container rules are explicitly reset in compact mode.
+Particle overflow is clipped only around the compact phrase boundary.
+
+At 320 px, the reading column grows from 236 to 288 px. With 200% text, lifecycle
+description width grows from about 142 to 288 px and the available panel height
+from about 258 to 382 px. Compact header heights are 60/76 px, the dock is 52 px,
+and the footer is 48 px at default text size. The main CTA and proposition are
+visible initially at 390 x 844 and 844 x 390. All content remains scroll reachable
+at smaller or enlarged sizes; no text is removed or reduced to force a fit.
+
+Changed outputs are the existing HTML, CSS, section script, browser tests and
+this guide. Runtime delta is HTML +2/-1, CSS +303/-44 and section controller
++52/-11 lines. Added branches serve one compact condition and one disclosure
+state; native scrolling, anchors, history and the observer are reused. Old compact
+rail rules are replaced rather than kept as a second mobile implementation.
+No dependency, public API, configuration, worker, artwork or Project Map topology
+changes. The complete particle IIFE and atmosphere/contact script are identical
+to the base; all six desktop content-view geometry/typography comparisons pass.
+
+Repository checks and the full final Brave suite pass. Evidence includes five
+mobile viewports, real touch input, menu names/targets, Escape/outside/selection,
+focus through breakpoint changes, scroll and gesture isolation, live 200% text
+without resize, landscape lifecycle flow, particle overflow, original navigation,
+mocked contact races, reduced motion and no-JavaScript. Separate technical and
+UI/UX review reverified both discovered regressions and report no remaining
+findings. This is Brave with mobile emulation, not a physical-phone, native
+keyboard or Safari test. No real email was sent. The external recovery directory
+holds changed-output hashes, logs, screenshots and separate review/delivery
+receipts. No unresolved minimality finding or new operational surface remains.
 
 ## Atomic phrase formation and proportions — 2026-09-05
 
