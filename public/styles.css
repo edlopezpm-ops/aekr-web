@@ -330,6 +330,7 @@ main {
 }
 
 .section > h2 {
+  color: var(--accent);
   font-size: clamp(1.6rem, 3.4vw, 2.15rem);
   margin: 0 0 var(--space-3);
   letter-spacing: -0.015em;
@@ -602,7 +603,7 @@ main {
   margin: 0 0 var(--space-1);
   font-size: 1.02rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--accent);
   letter-spacing: 0.005em;
 }
 
@@ -631,7 +632,7 @@ main {
 .term dt {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--accent);
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -716,7 +717,7 @@ main {
   margin: 0 0 0.2rem;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--accent);
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
