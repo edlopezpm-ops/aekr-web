@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "governance_profile": "LEAN",
+  "execution_mode": "MODE0",
+  "tool_entry": {
+    "document_role": "DOWNSTREAM_ENGINEERING_CONSTITUTION",
+    "canonical_template_id": "AEKR_ENGINEERING_CONSTITUTION",
+    "canonical_template_version": 11,
+    "canonical_sha256": "A346BC9A1EABCB3F6CA2B916CFC35683C59B5BDD36C2F1B42090DE6EFF71311A",
+    "paths": [
+      "AGENTS.md"
+    ]
+  },
+  "local_validators": {
+    "generated_project": "tools/aekr/validate-generated-project.mjs",
+    "project_map": "tools/aekr/validate-project-map.mjs"
+  },
+  "inheritance": {
+    "verification_status": "INHERITED_UNTESTED",
+    "source_repository_confidence_inherited": false
+  },
+  "switch_capability_parity": "VALIDATOR_VERIFIED"
+}

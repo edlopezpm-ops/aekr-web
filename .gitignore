@@ -1,6 +1,11 @@
 .DS_Store
 Thumbs.db
 .wrangler
+node_modules/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
 
 # Internal change briefs — commercial model and pricing, not website source.
 Aug-24 Change - *.md

@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>aekr-web · Project Map</title>
+  <style>
+    :root{--bg:#05070a;--panel:#080c12;--raised:#0d121a;--fg:#eef1f5;--muted:#9aa4b2;--faint:#788292;--accent:#4dd6c0;--deep:#04211d;--dim:#2f8676;--border:#1c222c;--soft:#141a22;--radius:14px;--sans:Inter,ui-sans-serif,system-ui,sans-serif;--mono:Consolas,"Liberation Mono",monospace}*{box-sizing:border-box}body{margin:0;min-width:320px;color:var(--fg);background:radial-gradient(circle at 80% 0,rgba(77,214,192,.1),transparent 28rem),var(--bg);font:15px/1.5 var(--sans)}a{color:var(--accent)}button,input{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.skip{position:fixed;z-index:9;top:.5rem;left:.5rem;padding:.6rem .8rem;color:var(--bg);background:var(--accent);transform:translateY(-160%)}.skip:focus{transform:none}header{padding:1rem clamp(1rem,4vw,3rem);border-bottom:1px solid var(--border);background:rgba(5,7,10,.82);backdrop-filter:blur(10px)}header img{display:block;width:min(100%,44rem);height:auto;border-radius:10px}h1{margin:1rem 0 .25rem;font-size:clamp(1.7rem,5vw,3.4rem);letter-spacing:-.04em}header p{max-width:55rem;margin:.25rem 0;color:var(--muted)}.search{display:block;max-width:34rem;margin-top:1rem}.search span{display:block;margin-bottom:.3rem;color:var(--faint);font:.7rem var(--mono);text-transform:uppercase}.search input{width:100%;min-height:44px;padding:.65rem .8rem;border:1px solid var(--border);border-radius:999px;background:var(--panel)}.layout{display:grid;grid-template-columns:minmax(19rem,42%) 1fr;min-height:55vh}.tree,.detail{padding:clamp(1rem,3vw,2rem)}.tree{border-right:1px solid var(--border)}.root,.node{width:100%;min-height:52px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-align:left;cursor:pointer}.root{padding:1rem;border-color:var(--dim);background:var(--deep)}.node{padding:.7rem .8rem}.root:hover,.node:hover,.root[aria-current=true],.node[aria-current=true]{border-color:var(--accent);background:rgba(77,214,192,.1)}.title{display:block;font-weight:700}.path{display:block;margin-top:.15rem;color:var(--faint);font:.7rem var(--mono);overflow-wrap:anywhere}.cluster{margin-top:1rem;padding:.6rem;border:1px solid var(--soft);border-radius:var(--radius);background:rgba(8,12,18,.7)}.cluster h2{margin:.2rem .2rem .6rem;color:var(--accent);font:.72rem var(--mono);letter-spacing:.08em;text-transform:uppercase}.cluster-list{display:grid;gap:.45rem}.detail{background:linear-gradient(145deg,rgba(13,18,26,.9),rgba(8,12,18,.95))}.detail-inner{position:sticky;top:1rem}.kicker{margin:0 0 .3rem;color:var(--accent);font:.7rem var(--mono);text-transform:uppercase}.detail h2{margin:0;font-size:clamp(1.5rem,4vw,2.6rem);letter-spacing:-.04em}.detail-path{color:var(--faint);font:.75rem var(--mono)}.detail-summary{color:var(--muted)}.detail h3{margin:1.2rem 0 .4rem;padding-top:.8rem;border-top:1px solid var(--soft);font:.72rem var(--mono);letter-spacing:.08em;text-transform:uppercase}.detail ul{margin:.4rem 0;padding-left:1.2rem;color:var(--muted)}.open{display:inline-flex;min-height:44px;align-items:center;margin-top:1rem;padding:.55rem .75rem;border:1px solid var(--dim);border-radius:8px;background:var(--deep);text-decoration:none}.open[hidden],.hidden{display:none}.aekr-footer{display:grid;justify-items:center;padding:1rem;border-top:1px solid var(--border)}.aekr-footer button{display:grid;justify-items:center;gap:.45rem;max-width:40rem;padding:.75rem;border:1px solid var(--border);border-radius:10px;background:var(--panel);cursor:default}.aekr-footer img{display:block;max-width:100%;height:auto}.aekr-footer p{margin:0;color:var(--faint);font-size:.8rem}@media(max-width:760px){.layout{grid-template-columns:1fr}.tree{border-right:0;border-bottom:1px solid var(--border)}.detail-inner{position:static}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#tree">Skip to map</a>
+  <header>
+    <img src="assets/aekr-banner.png" alt="AEKR banner">
+    <h1>aekr-web</h1>
+    <p>A self-contained project map. It works directly from disk and does not load an external JSON file.</p>
+    <label class="search"><span>Search nodes</span><input id="search" type="search" autocomplete="off" placeholder="Search label, path, or responsibility…"></label>
+  </header>
+  <main class="layout">
+    <section class="tree" id="tree" aria-label="Project components"></section>
+    <section class="detail" aria-labelledby="detail-title"><div class="detail-inner" aria-live="polite" aria-atomic="true"><p class="kicker" id="detail-kind"></p><h2 id="detail-title"></h2><p class="detail-path" id="detail-path"></p><p class="detail-summary" id="detail-summary"></p><h3>Responsibilities</h3><ul id="detail-responsibilities"></ul><h3>Boundaries</h3><ul id="detail-boundaries"></ul><h3>Use it when</h3><ul id="detail-use"></ul><h3>Critical routes</h3><ul id="detail-routes"></ul><a class="open" id="open" href="README.md">Open local source</a></div></section>
+  </main>
+  <footer class="aekr-footer"><button type="button" disabled aria-disabled="true" aria-label="Build with AEKR — decorative, no action"><img src="assets/aekr-banner.png" alt="Build with AEKR"><p>Built with the AI Engineering Knowledge Racking (AEKR) workflow.</p></button></footer>
+  <script type="application/json" id="project-map-index">
+{
+  "root": {
+    "id": "project-root",
+    "path": "README.md"
+  },
+  "clusters": [
+    {
+      "id": "website",
+      "nodes": [
+        {
+          "id": "homepage",
+          "path": "public/index.html"
+        },
+        {
+          "id": "styles",
+          "path": "public/styles.css"
+        },
+        {
+          "id": "browser-script",
+          "path": "public/script.js"
+        },
+        {
+          "id": "site-assets",
+          "path": "public/assets/"
+        },
+        {
+          "id": "not-found",
+          "path": "public/404.html"
+        },
+        {
+          "id": "headers",
+          "path": "public/_headers"
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "nodes": [
+        {
+          "id": "worker",
+          "path": "src/index.js"
+        },
+        {
+          "id": "hosting",
+          "path": "wrangler.jsonc"
+        },
+        {
+          "id": "checks",
+          "path": "tools/check.mjs"
+        },
+        {
+          "id": "validation-ci",
+          "path": ".github/workflows/validate.yml"
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "nodes": [
+        {
+          "id": "operating-guide",
+          "path": "docs/master.md"
+        },
+        {
+          "id": "switchboard",
+          "path": "MASTER_SWITCH.md"
+        },
+        {
+          "id": "constitution",
+          "path": "AGENTS.md"
+        },
+        {
+          "id": "owner",
+          "path": "OWNER_PROFILE.md"
+        },
+        {
+          "id": "scaffold",
+          "path": "aekr-scaffold.json"
+        },
+        {
+          "id": "aekr-tools",
+          "path": "tools/aekr/"
+        },
+        {
+          "id": "repository-brand",
+          "path": "assets/"
+        },
+        {
+          "id": "map-contract",
+          "path": "project-map.json"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+  <script>
+  "use strict";
+  // Keep these IDs, paths, and clusters in parity with project-map.json.
+  const PROJECT_MAP_DATA={
+  "root": {
+    "id": "project-root",
+    "label": "aekr-web",
+    "path": "README.md",
+    "kind": "aekr-web",
+    "authority": "canonical",
+    "summary": "Public AEKR website, contact boundary and its engineering workspace.",
+    "responsibilities": [
+      "Explain the project and route readers to source."
+    ],
+    "boundaries": [
+      "Only the public asset directory and server function inputs belong to the website release."
+    ],
+    "useWhen": [
+      "Get oriented before changing or reviewing the project."
+    ],
+    "routes": [
+      "docs/master.md",
+      "MASTER_SWITCH.md",
+      "public/index.html"
+    ],
+    "tags": [
+      "overview",
+      "website"
+    ]
+  },
+  "clusters": [
+    {
+      "id": "website",
+      "label": "Public website",
+      "summary": "Visitor-facing content and presentation.",
+      "nodes": [
+        {
+          "id": "homepage",
+          "label": "Homepage",
+          "path": "public/index.html",
+          "kind": "Homepage",
+          "authority": "implementation",
+          "summary": "Explains the AEKR practice and presents contact and pricing-request forms.",
+          "responsibilities": [
+            "Own content, semantic structure, navigation and form markup."
+          ],
+          "boundaries": [
+            "Marketing language does not define the engineering runtime."
+          ],
+          "useWhen": [
+            "Update public content or inspect form accessibility."
+          ],
+          "routes": [
+            "public/styles.css",
+            "public/script.js"
+          ],
+          "tags": [
+            "content",
+            "accessibility",
+            "forms"
+          ]
+        },
+        {
+          "id": "styles",
+          "label": "Visual design",
+          "path": "public/styles.css",
+          "kind": "Visual design",
+          "authority": "implementation",
+          "summary": "Controls responsive layout, typography, focus treatment and visual presentation.",
+          "responsibilities": [
+            "Keep content readable across viewport sizes.",
+            "Preserve motion and accessibility preferences."
+          ],
+          "boundaries": [
+            "CSS is presentation; it does not govern project state."
+          ],
+          "useWhen": [
+            "Change styling or diagnose reflow and focus."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/script.js"
+          ],
+          "tags": [
+            "css",
+            "responsive",
+            "keyboard"
+          ]
+        },
+        {
+          "id": "browser-script",
+          "label": "Browser interactions",
+          "path": "public/script.js",
+          "kind": "Browser interactions",
+          "authority": "implementation",
+          "summary": "Controls the decorative background and contact submission experience.",
+          "responsibilities": [
+            "Keep animation decorative.",
+            "Report contact outcomes accessibly."
+          ],
+          "boundaries": [
+            "The browser receives no mailbox secret or provider credential."
+          ],
+          "useWhen": [
+            "Inspect motion behavior or client request handling."
+          ],
+          "routes": [
+            "public/index.html",
+            "src/index.js"
+          ],
+          "tags": [
+            "canvas",
+            "motion",
+            "contact"
+          ]
+        },
+        {
+          "id": "site-assets",
+          "label": "Website artwork",
+          "path": "public/assets/",
+          "kind": "Website artwork",
+          "authority": "implementation",
+          "summary": "Holds local website artwork and its license.",
+          "responsibilities": [
+            "Keep images local and preserve transparent artwork."
+          ],
+          "boundaries": [
+            "These served assets differ from the canonical documentation banner."
+          ],
+          "useWhen": [
+            "Replace approved artwork or check asset licensing."
+          ],
+          "routes": [
+            "assets/",
+            "public/styles.css"
+          ],
+          "tags": [
+            "images",
+            "branding",
+            "license"
+          ]
+        },
+        {
+          "id": "not-found",
+          "label": "Not-found page",
+          "path": "public/404.html",
+          "kind": "Not-found page",
+          "authority": "implementation",
+          "summary": "Provides an accessible route back when a requested page does not exist.",
+          "responsibilities": [
+            "Explain missing content and return visitors to the homepage."
+          ],
+          "boundaries": [
+            "The hosting configuration determines how this page is selected."
+          ],
+          "useWhen": [
+            "Verify broken-route behavior."
+          ],
+          "routes": [
+            "wrangler.jsonc",
+            "public/index.html"
+          ],
+          "tags": [
+            "404",
+            "navigation"
+          ]
+        },
+        {
+          "id": "headers",
+          "label": "Browser response headers",
+          "path": "public/_headers",
+          "kind": "Browser response headers",
+          "authority": "configuration",
+          "summary": "Declares browser protection and asset caching headers for static responses.",
+          "responsibilities": [
+            "Set explicit browser security and caching policies."
+          ],
+          "boundaries": [
+            "server function-generated API responses have their own headers."
+          ],
+          "useWhen": [
+            "Review security headers or cache behavior."
+          ],
+          "routes": [
+            "src/index.js",
+            "wrangler.jsonc"
+          ],
+          "tags": [
+            "security",
+            "cache",
+            "csp"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Runtime and delivery",
+      "summary": "The email boundary, hosting configuration and repeatable checks.",
+      "nodes": [
+        {
+          "id": "worker",
+          "label": "Contact server function",
+          "path": "src/index.js",
+          "kind": "Contact server function",
+          "authority": "implementation",
+          "summary": "Validates contact requests and sends email through the server-side binding.",
+          "responsibilities": [
+            "Handle invalid requests and delivery failures.",
+            "Keep recipient configuration server-side."
+          ],
+          "boundaries": [
+            "A successful mocked send is not proof of inbox delivery; in-memory throttling is best effort."
+          ],
+          "useWhen": [
+            "Review the API contract and failure behavior."
+          ],
+          "routes": [
+            "wrangler.jsonc",
+            "public/script.js",
+            "docs/master.md"
+          ],
+          "tags": [
+            "worker",
+            "api",
+            "email",
+            "validation"
+          ]
+        },
+        {
+          "id": "hosting",
+          "label": "Hosting configuration",
+          "path": "wrangler.jsonc",
+          "kind": "Hosting configuration",
+          "authority": "configuration",
+          "summary": "Selects the server function entrypoint, public asset directory and email binding.",
+          "responsibilities": [
+            "Define deployable runtime boundaries."
+          ],
+          "boundaries": [
+            "Account credentials, recipient secrets and deployed state remain external."
+          ],
+          "useWhen": [
+            "Check release inputs and bindings."
+          ],
+          "routes": [
+            "src/index.js",
+            "public/",
+            "README.md"
+          ],
+          "tags": [
+            "cloudflare",
+            "hosting",
+            "release"
+          ]
+        },
+        {
+          "id": "checks",
+          "label": "Repository checks",
+          "path": "tools/check.mjs",
+          "kind": "Repository checks",
+          "authority": "implementation",
+          "summary": "Runs dependency-free integrity, syntax and source-boundary checks.",
+          "responsibilities": [
+            "Verify declared validator provenance.",
+            "Fail when structural or source contracts drift."
+          ],
+          "boundaries": [
+            "Local checks cannot approve themselves or prove a live deployment."
+          ],
+          "useWhen": [
+            "Validate a bounded change before review."
+          ],
+          "routes": [
+            "package.json",
+            "tools/aekr/",
+            "docs/master.md"
+          ],
+          "tags": [
+            "validation",
+            "integrity",
+            "node"
+          ]
+        },
+        {
+          "id": "validation-ci",
+          "label": "Validation workflow",
+          "path": ".github/workflows/validate.yml",
+          "kind": "Validation workflow",
+          "authority": "configuration",
+          "summary": "Repeats the repository checks on GitHub events.",
+          "responsibilities": [
+            "Run checks with read-only repository permissions."
+          ],
+          "boundaries": [
+            "This workflow does not deploy; Cloudflare Builds is a separate system."
+          ],
+          "useWhen": [
+            "Inspect automated validation for the exact commit."
+          ],
+          "routes": [
+            "package.json",
+            "tools/check.mjs"
+          ],
+          "tags": [
+            "ci",
+            "github",
+            "checks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "label": "Project governance",
+      "summary": "Local authority, operating decisions and traceable scaffolds.",
+      "nodes": [
+        {
+          "id": "operating-guide",
+          "label": "Project decisions",
+          "path": "docs/master.md",
+          "kind": "Project decisions",
+          "authority": "canonical",
+          "summary": "Defines project scope, risk profile, operating rules and verification boundaries.",
+          "responsibilities": [
+            "Record durable decisions and current verification limitations."
+          ],
+          "boundaries": [
+            "Claims require their own evidence; the map never supplies acceptance."
+          ],
+          "useWhen": [
+            "Resume work or review scope and release boundaries."
+          ],
+          "routes": [
+            "MASTER_SWITCH.md",
+            "AGENTS.md",
+            "README.md"
+          ],
+          "tags": [
+            "scope",
+            "decisions",
+            "status"
+          ]
+        },
+        {
+          "id": "switchboard",
+          "label": "Master Switch",
+          "path": "MASTER_SWITCH.md",
+          "kind": "Master Switch",
+          "authority": "canonical",
+          "summary": "Owns the project capability states and their authorized routing rules.",
+          "responsibilities": [
+            "Resolve applicable states at session start.",
+            "Record owner-authorized state changes."
+          ],
+          "boundaries": [
+            "An enabled capability neither selects an executor nor supplies authorization by itself."
+          ],
+          "useWhen": [
+            "Determine the current permitted project route."
+          ],
+          "routes": [
+            "AGENTS.md",
+            "docs/master.md"
+          ],
+          "tags": [
+            "authority",
+            "switches",
+            "gates"
+          ]
+        },
+        {
+          "id": "constitution",
+          "label": "Engineering Constitution",
+          "path": "AGENTS.md",
+          "kind": "Engineering Constitution",
+          "authority": "canonical",
+          "summary": "Supplies the unchanged portable engineering and collaboration contract.",
+          "responsibilities": [
+            "Require scoped work, evidence and separate acceptance."
+          ],
+          "boundaries": [
+            "Project-specific context lives in the operating guide, not a forked core."
+          ],
+          "useWhen": [
+            "Start an agent session or review engineering duties."
+          ],
+          "routes": [
+            "MASTER_SWITCH.md",
+            "docs/master.md",
+            "OWNER_PROFILE.md"
+          ],
+          "tags": [
+            "governance",
+            "agents",
+            "review"
+          ]
+        },
+        {
+          "id": "owner",
+          "label": "Owner profile",
+          "path": "OWNER_PROFILE.md",
+          "kind": "Owner profile",
+          "authority": "canonical",
+          "summary": "Calibrates communication and identifies the project owner.",
+          "responsibilities": [
+            "Use the preferred name and language for the context."
+          ],
+          "boundaries": [
+            "Personal calibration does not replace project governance."
+          ],
+          "useWhen": [
+            "Prepare a human-facing explanation or handoff."
+          ],
+          "routes": [
+            "docs/master.md"
+          ],
+          "tags": [
+            "owner",
+            "communication"
+          ]
+        },
+        {
+          "id": "scaffold",
+          "label": "Scaffold metadata",
+          "path": "aekr-scaffold.json",
+          "kind": "Scaffold metadata",
+          "authority": "configuration",
+          "summary": "Declares the selected local scaffold profile and pinned core identity.",
+          "responsibilities": [
+            "Keep local artifact declarations machine-readable."
+          ],
+          "boundaries": [
+            "Metadata is not a test receipt or inherited confidence."
+          ],
+          "useWhen": [
+            "Validate the governance projection."
+          ],
+          "routes": [
+            "tools/aekr/",
+            "docs/master.md"
+          ],
+          "tags": [
+            "metadata",
+            "schema",
+            "provenance"
+          ]
+        },
+        {
+          "id": "aekr-tools",
+          "label": "AEKR validators",
+          "path": "tools/aekr/",
+          "kind": "AEKR validators",
+          "authority": "implementation",
+          "summary": "Contains portable validators and provenance pins.",
+          "responsibilities": [
+            "Validate scaffold identity and map parity.",
+            "Preserve the documented branding-only variance."
+          ],
+          "boundaries": [
+            "Local editable tools are not a hostile-write trust boundary or upstream certification."
+          ],
+          "useWhen": [
+            "Inspect provenance or repeat structural checks."
+          ],
+          "routes": [
+            "tools/check.mjs",
+            "aekr-scaffold.json",
+            "docs/master.md"
+          ],
+          "tags": [
+            "validators",
+            "license",
+            "provenance"
+          ]
+        },
+        {
+          "id": "repository-brand",
+          "label": "Repository provenance",
+          "path": "assets/",
+          "kind": "Repository provenance",
+          "authority": "derived",
+          "summary": "Contains the canonical local README and Project Map banner and license.",
+          "responsibilities": [
+            "Attribute the AEKR workflow without remote image requests."
+          ],
+          "boundaries": [
+            "Workflow attribution is not certification; these files are not served."
+          ],
+          "useWhen": [
+            "Inspect documentation branding and license."
+          ],
+          "routes": [
+            "README.md",
+            "PROJECT_MAP.md"
+          ],
+          "tags": [
+            "branding",
+            "license",
+            "banner"
+          ]
+        },
+        {
+          "id": "map-contract",
+          "label": "Map structure",
+          "path": "project-map.json",
+          "kind": "Map structure",
+          "authority": "canonical",
+          "summary": "Defines stable map identifiers, real paths and component hierarchy.",
+          "responsibilities": [
+            "Keep both embedded HTML structures in parity."
+          ],
+          "boundaries": [
+            "Operational state and switch values belong to their canonical sources."
+          ],
+          "useWhen": [
+            "Update repository orientation."
+          ],
+          "routes": [
+            "PROJECT_MAP.html",
+            "PROJECT_MAP.md"
+          ],
+          "tags": [
+            "map",
+            "json",
+            "structure"
+          ]
+        }
+      ]
+    }
+  ]
+};
+  const structuralIndex=JSON.parse(document.getElementById("project-map-index").textContent);
+  function structuralEntries(data){
+    const entries=[{id:data.root.id,path:data.root.path,kind:"root",cluster:null}];
+    data.clusters.forEach(cluster=>{
+      entries.push({id:cluster.id,path:null,kind:"cluster",cluster:null});
+      cluster.nodes.forEach(node=>entries.push({id:node.id,path:node.path,kind:"node",cluster:cluster.id}));
+    });
+    return entries;
+  }
+  const liveEntries=structuralEntries(PROJECT_MAP_DATA),indexEntries=structuralEntries(structuralIndex);
+  const livePairs=new Map(liveEntries.map(entry=>[entry.id,JSON.stringify(entry)]));
+  const indexPairs=new Map(indexEntries.map(entry=>[entry.id,JSON.stringify(entry)]));
+  const parityIds=new Set([...livePairs.keys(),...indexPairs.keys()]);
+  if(livePairs.size!==liveEntries.length||indexPairs.size!==indexEntries.length||[...parityIds].some(id=>livePairs.get(id)!==indexPairs.get(id)))throw new Error("Embedded Project Map index is out of parity with the interactive snapshot");
+  const all=[PROJECT_MAP_DATA.root,...PROJECT_MAP_DATA.clusters.flatMap(cluster=>cluster.nodes)],byId=new Map(all.map(node=>[node.id,node]));let selected=PROJECT_MAP_DATA.root.id;
+  const safeHref=value=>typeof value==="string"&&value.length>0&&!/^[a-z][a-z0-9+.-]*:/i.test(value)&&!value.startsWith("/")&&!value.includes("\\")&&!value.split("#")[0].split("/").includes("..");
+  function button(node,className){const control=document.createElement("button");control.type="button";control.className=className;control.dataset.nodeId=node.id;control.setAttribute("aria-current",String(selected===node.id));const title=document.createElement("span");title.className="title";title.textContent=node.label;const path=document.createElement("span");path.className="path";path.textContent=node.path;control.append(title,path);control.addEventListener("click",()=>show(node.id));return control}
+  function list(id,values){const element=document.getElementById(id);element.replaceChildren();values.forEach(value=>{const item=document.createElement("li");item.textContent=value;element.append(item)})}
+  function show(id){const node=byId.get(id)||PROJECT_MAP_DATA.root;selected=node.id;document.querySelectorAll("[data-node-id]").forEach(control=>control.setAttribute("aria-current",String(control.dataset.nodeId===node.id)));document.getElementById("detail-kind").textContent=`${node.kind} · ${node.authority}`;document.getElementById("detail-title").textContent=node.label;document.getElementById("detail-path").textContent=node.path;document.getElementById("detail-summary").textContent=node.summary;list("detail-responsibilities",node.responsibilities);list("detail-boundaries",node.boundaries);list("detail-use",node.useWhen||[]);list("detail-routes",node.routes);const open=document.getElementById("open");open.hidden=!safeHref(node.path);if(!open.hidden)open.href=node.path}
+  function render(){const tree=document.getElementById("tree");tree.replaceChildren(button(PROJECT_MAP_DATA.root,"root"));PROJECT_MAP_DATA.clusters.forEach(cluster=>{const section=document.createElement("section");section.className="cluster";const heading=document.createElement("h2");heading.textContent=cluster.label;const nodes=document.createElement("div");nodes.className="cluster-list";cluster.nodes.forEach(node=>nodes.append(button(node,"node")));section.append(heading,nodes);tree.append(section)});show(PROJECT_MAP_DATA.root.id)}
+  function filter(){const query=document.getElementById("search").value.trim().toLowerCase();document.querySelectorAll("[data-node-id]").forEach(control=>{const node=byId.get(control.dataset.nodeId);const text=[node.label,node.path,node.summary,...node.responsibilities,...node.boundaries,...(node.useWhen||[]),...(node.tags||[])].join(" ").toLowerCase();control.classList.toggle("hidden",Boolean(query)&&!text.includes(query))});document.querySelectorAll(".cluster").forEach(cluster=>cluster.classList.toggle("hidden",![...cluster.querySelectorAll(".node")].some(node=>!node.classList.contains("hidden"))))}
+  render();const search=document.getElementById("search");search.addEventListener("input",filter);document.addEventListener("keydown",event=>{if(event.key==="/"&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)){event.preventDefault();search.focus()}else if(event.key==="Escape"){search.value="";filter();search.focus()}});
+  </script>
+</body>
+</html>

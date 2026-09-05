@@ -27,6 +27,9 @@
 
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const finePointerQuery = window.matchMedia("(pointer: fine)");
+  const slowUpdateQuery = window.matchMedia("(update: slow)");
+  const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+  const connection = navigator.connection;
 
   function seededRandom(seed) {
     let state = seed >>> 0;
@@ -69,7 +72,8 @@
   let lastFrame = 0;
   let paused = document.hidden;
 
-  const motionAllowed = () => !paused && !reducedMotionQuery.matches;
+  const motionAllowed = () => !paused && !reducedMotionQuery.matches &&
+    !slowUpdateQuery.matches && !coarsePointerQuery.matches && !connection?.saveData;
 
   function draw(now) {
     context.clearRect(0, 0, viewport.width, viewport.height);
@@ -120,8 +124,6 @@
     lastFrame = now;
     draw(now);
 
-    root.style.setProperty("--cursor-x", `${(pointer.currentX + 0.5) * 100}%`);
-    root.style.setProperty("--cursor-y", `${(pointer.currentY + 0.5) * 100}%`);
   }
 
   function startLoop() {
@@ -159,6 +161,348 @@
     startLoop();
   });
   reducedMotionQuery.addEventListener("change", startLoop);
+  slowUpdateQuery.addEventListener("change", startLoop);
+  coarsePointerQuery.addEventListener("change", startLoop);
+  connection?.addEventListener?.("change", startLoop);
+})();
+
+/* --------------------------------------------------------------------------
+   Procedural nebula adapted from accreatio, Copyright (c) 2026 Ed Lopez.
+   All rights reserved. AEKR adaptation authorized by the copyright holder.
+   Source: src/components/nebula.ts and src/components/Atmosphere.tsx,
+   accreatio commit de3558870aed85a9b763421a1e919fdf19c25dea.
+   The source's home speed, shader field and mouse response are preserved;
+   strata colors use AEKR mint/steel. No service or third-party runtime.
+   -------------------------------------------------------------------------- */
+(() => {
+  "use strict";
+
+  const root = document.querySelector(".atmosphere");
+  if (!root) return;
+
+  const VERTEX_SOURCE = `
+  attribute vec2 a_position;
+  varying vec2 v_uv;
+  void main() {
+    v_uv = a_position * 0.5 + 0.5;
+    gl_Position = vec4(a_position, 0.0, 1.0);
+  }`;
+
+  /** Value-noise fbm with two-level domain warping (the classic warp-of-a-warp
+   * construction) plus absorption and emission shaping. Written for WebGL1. */
+  const FRAGMENT_SOURCE = `
+  precision highp float;
+  varying vec2 v_uv;
+  uniform vec2 u_resolution;
+  uniform float u_time;
+  uniform vec2 u_pointer;
+  uniform float u_theme;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(234.34, 435.345));
+    p += dot(p, p + 34.23);
+    return fract(p.x * p.y);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+
+  const mat2 ROT = mat2(0.8, 0.6, -0.6, 0.8);
+
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 5; i++) {
+      value += amplitude * noise(p);
+      p = ROT * p * 2.02;
+      amplitude *= 0.5;
+    }
+    return value;
+  }
+
+  void main() {
+    vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
+    vec2 uv = v_uv * aspect;
+    float t = u_time;
+
+    // Gas coordinates: gentle autonomous drift plus a small pointer-driven
+    // shear so the medium itself answers the cursor.
+    vec2 p = uv * 2.1 + vec2(t * 0.011, -t * 0.006);
+    p += u_pointer * 0.22;
+
+    vec2 q = vec2(fbm(p), fbm(p + vec2(5.2, 1.3)));
+    vec2 r = vec2(
+      fbm(p + 2.6 * q + vec2(1.7, 9.2) + 0.06 * t),
+      fbm(p + 2.6 * q + vec2(8.3, 2.8) + 0.045 * t)
+    );
+    float f = fbm(p + 2.4 * r);
+
+    // Density: keep the left reading column airy, thicken toward the right.
+    float column = smoothstep(0.05, 0.72, v_uv.x);
+    float density = smoothstep(0.32, 0.94, f) * mix(0.35, 1.0, column);
+
+    // Strata coloring.
+    vec3 deep = vec3(0.020, 0.027, 0.039);
+    vec3 mint = vec3(0.302, 0.839, 0.753);
+    vec3 steel = vec3(0.435, 0.561, 0.682);
+    vec3 teal = vec3(0.184, 0.525, 0.463);
+    vec3 silver = vec3(0.616, 0.702, 0.788);
+
+    vec3 color = mix(deep, mint, clamp(f * f * 2.4, 0.0, 1.0));
+    color = mix(color, steel, clamp(dot(q, q) * 0.85, 0.0, 1.0));
+    color = mix(color, teal, clamp(r.y * r.y * 0.9, 0.0, 1.0) * 0.55);
+
+    // Emission cores: one anchored in the gas, one carried by the pointer.
+    vec2 core = vec2(0.72, 0.46) * aspect;
+    float coreGlow = exp(-dot(uv - core, uv - core) * 5.5);
+    vec2 lamp = (vec2(0.5) + u_pointer * vec2(0.42, 0.34)) * aspect;
+    float lampGlow = exp(-dot(uv - lamp, uv - lamp) * 7.0);
+    float emission = (coreGlow * 0.85 + lampGlow * 0.5) * (0.45 + 0.55 * f);
+    color += silver * emission * 0.55;
+    color += mint * lampGlow * 0.35;
+
+    // Dust lanes: cold foreground absorption carves filaments into the glow.
+    float dust = fbm(p * 2.3 + r * 1.4);
+    float absorption = smoothstep(0.28, 0.72, dust);
+    color *= mix(0.42, 1.06, absorption);
+
+    // Micro star grains, dimmed where the dust is thickest.
+    vec2 grid = uv * 210.0;
+    float cell = hash(floor(grid));
+    float grain = smoothstep(0.9975, 1.0, cell);
+    float twinkle = 0.7 + 0.3 * sin(t * 1.4 + cell * 40.0);
+    color += vec3(0.92, 0.94, 1.0) * grain * twinkle * absorption * 0.8;
+
+    float alpha = clamp(density * 1.15 + emission * 0.5, 0.0, 1.0);
+
+    // Light theme renders the same field as a faint pastel wash.
+    vec3 paper = vec3(0.976, 0.976, 0.984);
+    vec3 lightInk = mix(paper, color * 0.5 + vec3(0.42), 0.9);
+    color = mix(color, lightInk, u_theme);
+    alpha = mix(alpha, alpha * 0.42, u_theme);
+
+    // Dither kills gradient banding on wide soft ramps.
+    color += (hash(uv * 913.7 + t) - 0.5) * 0.012;
+
+    gl_FragColor = vec4(color * alpha, alpha);
+  }`;
+
+  const FRAME_INTERVAL_MS = 1000 / 30;
+  const HOME_SPEED = 0.644;
+  const HOME_PARALLAX_PX = 20;
+  const RESOLUTION_SCALE = 0.6;
+  const MAX_PIXEL_RATIO = 1.5;
+  const MAX_RENDER_PIXELS = 1_500_000;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const slowUpdate = window.matchMedia("(update: slow)");
+  const coarsePointer = window.matchMedia("(pointer: coarse)");
+  const connection = navigator.connection;
+  const pointer = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
+  let renderer = null;
+  let frame = 0;
+  let pointerFrame = 0;
+  let lastFrame = 0;
+  let simulatedTime = Math.random() * 400;
+  let failed = false;
+  root.dataset.renderer = "fallback";
+
+  const motionAllowed = () => !reducedMotion.matches && !slowUpdate.matches &&
+    !coarsePointer.matches && !connection?.saveData;
+
+  function createRenderer() {
+    const canvas = document.createElement("canvas");
+    canvas.className = "atmosphere__webgl";
+    let gl;
+    try {
+      gl = canvas.getContext("webgl", {
+        alpha: true, antialias: false, depth: false, stencil: false,
+        powerPreference: "low-power", premultipliedAlpha: true,
+      });
+    } catch {
+      return null;
+    }
+    if (!gl) return null;
+
+    const shaders = [];
+    let program = null;
+    let buffer = null;
+    function dispose() {
+      if (buffer) gl.deleteBuffer(buffer);
+      if (program) gl.deleteProgram(program);
+      shaders.forEach((shader) => gl.deleteShader(shader));
+      canvas.removeEventListener("webglcontextlost", handleContextLoss);
+      canvas.remove();
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    }
+    function compile(type, source) {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      shaders.push(shader);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
+    }
+
+    const vertex = compile(gl.VERTEX_SHADER, VERTEX_SOURCE);
+    const fragment = compile(gl.FRAGMENT_SHADER, FRAGMENT_SOURCE);
+    program = gl.createProgram();
+    if (!vertex || !fragment || !program) {
+      dispose();
+      return null;
+    }
+    gl.attachShader(program, vertex);
+    gl.attachShader(program, fragment);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      dispose();
+      return null;
+    }
+    gl.useProgram(program);
+    buffer = gl.createBuffer();
+    if (!buffer) {
+      dispose();
+      return null;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const position = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+    const uniforms = {
+      resolution: gl.getUniformLocation(program, "u_resolution"),
+      time: gl.getUniformLocation(program, "u_time"),
+      pointer: gl.getUniformLocation(program, "u_pointer"),
+      theme: gl.getUniformLocation(program, "u_theme"),
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLoss);
+    root.insertBefore(canvas, root.querySelector(".atmosphere__cursor-field"));
+
+    return {
+      dispose,
+      resize() {
+        const bounds = canvas.getBoundingClientRect();
+        let scale = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO) * RESOLUTION_SCALE;
+        scale = Math.min(scale, Math.sqrt(MAX_RENDER_PIXELS / Math.max(1, bounds.width * bounds.height)));
+        canvas.width = Math.max(1, Math.floor(bounds.width * scale));
+        canvas.height = Math.max(1, Math.floor(bounds.height * scale));
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      },
+      draw() {
+        gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+        gl.uniform1f(uniforms.time, simulatedTime);
+        gl.uniform2f(uniforms.pointer, pointer.currentX, -pointer.currentY);
+        gl.uniform1f(uniforms.theme, 0);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      },
+    };
+  }
+
+  function resetPointer() {
+    window.cancelAnimationFrame(pointerFrame);
+    pointer.targetX = 0;
+    pointer.targetY = 0;
+    root.style.setProperty("--nebula-pointer-x", "0px");
+    root.style.setProperty("--nebula-pointer-y", "0px");
+    root.style.setProperty("--nebula-far-x", "0px");
+    root.style.setProperty("--nebula-far-y", "0px");
+    root.style.setProperty("--nebula-cursor-x", "72%");
+    root.style.setProperty("--nebula-cursor-y", "48%");
+  }
+
+  function render(now) {
+    if (!renderer || document.hidden || !motionAllowed()) return;
+    frame = window.requestAnimationFrame(render);
+    if (now - lastFrame < FRAME_INTERVAL_MS) return;
+    const step = Math.min(now - lastFrame, 100) / 1000;
+    lastFrame = now;
+    simulatedTime += step * (0.55 + HOME_SPEED);
+    const inertia = 1 - Math.pow(0.02, step);
+    pointer.currentX += (pointer.targetX - pointer.currentX) * inertia;
+    pointer.currentY += (pointer.targetY - pointer.currentY) * inertia;
+    renderer.draw();
+  }
+
+  function syncMotion() {
+    window.cancelAnimationFrame(frame);
+    window.cancelAnimationFrame(pointerFrame);
+    frame = 0;
+    root.toggleAttribute("data-paused", document.hidden);
+    if (!motionAllowed() || failed) {
+      renderer?.dispose();
+      renderer = null;
+      root.dataset.renderer = "fallback";
+      resetPointer();
+      pointer.currentX = 0;
+      pointer.currentY = 0;
+      return;
+    }
+    if (document.hidden) return;
+    if (!renderer) {
+      renderer = createRenderer();
+      if (!renderer) {
+        failed = true;
+        return;
+      }
+      renderer.resize();
+      renderer.draw();
+      root.dataset.renderer = "webgl";
+    }
+    lastFrame = performance.now();
+    frame = window.requestAnimationFrame(render);
+  }
+
+  function handleContextLoss(event) {
+    event.preventDefault();
+    failed = true;
+    syncMotion();
+  }
+
+  function resize() {
+    if (!renderer) return;
+    renderer.resize();
+    if (!document.hidden) renderer.draw();
+  }
+
+  window.addEventListener("pointermove", (event) => {
+    if (!renderer || document.hidden || !motionAllowed() ||
+        (event.pointerType && event.pointerType !== "mouse")) return;
+    window.cancelAnimationFrame(pointerFrame);
+    pointerFrame = window.requestAnimationFrame(() => {
+      const x = Math.max(-0.5, Math.min(0.5, event.clientX / window.innerWidth - 0.5));
+      const y = Math.max(-0.5, Math.min(0.5, event.clientY / window.innerHeight - 0.5));
+      const offsetX = x * HOME_PARALLAX_PX * -2;
+      const offsetY = y * HOME_PARALLAX_PX * -1.2;
+      root.style.setProperty("--nebula-pointer-x", `${offsetX.toFixed(2)}px`);
+      root.style.setProperty("--nebula-pointer-y", `${offsetY.toFixed(2)}px`);
+      root.style.setProperty("--nebula-far-x", `${(offsetX * -0.34).toFixed(2)}px`);
+      root.style.setProperty("--nebula-far-y", `${(offsetY * -0.34).toFixed(2)}px`);
+      root.style.setProperty("--nebula-cursor-x", `${(x + 0.5) * 100}%`);
+      root.style.setProperty("--nebula-cursor-y", `${(y + 0.5) * 100}%`);
+      pointer.targetX = x;
+      pointer.targetY = y;
+    });
+  }, { passive: true });
+  window.addEventListener("pointerout", (event) => {
+    if (event.relatedTarget === null) resetPointer();
+  });
+  window.addEventListener("blur", resetPointer);
+  document.addEventListener("visibilitychange", syncMotion);
+  reducedMotion.addEventListener("change", syncMotion);
+  slowUpdate.addEventListener("change", syncMotion);
+  coarsePointer.addEventListener("change", syncMotion);
+  connection?.addEventListener?.("change", syncMotion);
+  new ResizeObserver(resize).observe(root);
+  syncMotion();
 })();
 
 /* --------------------------------------------------------------------------

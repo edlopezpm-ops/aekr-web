@@ -10,11 +10,8 @@
   --fg-muted: #9aa4b2;
   --fg-faint: #788292;
 
-  /* The characteristic AEKR green, taken from the brand mark. --accent is kept
-     as the historical name; --aekr-green is the brand-level alias used by the
-     terminal-letter signature. */
+  /* The characteristic AEKR green, taken from the brand mark. */
   --accent: #4dd6c0;
-  --aekr-green: var(--accent);
   --accent-deep: #04211d;
   --accent-dim: #2f8676;
 
@@ -39,11 +36,8 @@
 
   --nebula-mint: #4dd6c0;
   --nebula-steel: #6f8fae;
-  --atmosphere-density: 0.55;
-  --duration-atmosphere: 900ms;
+  --atmosphere-density: 0.88;
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --cursor-x: 50%;
-  --cursor-y: 40%;
 }
 
 * {
@@ -73,6 +67,12 @@ body {
    ========================================================================== */
 
 .atmosphere {
+  --nebula-pointer-x: 0px;
+  --nebula-pointer-y: 0px;
+  --nebula-far-x: 0px;
+  --nebula-far-y: 0px;
+  --nebula-cursor-x: 72%;
+  --nebula-cursor-y: 48%;
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -90,31 +90,64 @@ body {
 }
 
 .atmosphere__starfield {
-  opacity: calc(var(--atmosphere-density) * 0.85);
+  z-index: 0;
+  opacity: calc(var(--atmosphere-density) * 0.72);
   -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 32%, black 0 55%, transparent 100%);
   mask-image: radial-gradient(ellipse 75% 65% at 50% 32%, black 0 55%, transparent 100%);
 }
 
 .atmosphere__nebula {
-  opacity: calc(var(--atmosphere-density) * 0.9);
+  z-index: 1;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  opacity: calc(var(--atmosphere-density) * 0.72);
   background:
-    radial-gradient(ellipse 58% 46% at 22% 20%, color-mix(in srgb, var(--nebula-mint) 30%, transparent), transparent 68%),
-    radial-gradient(ellipse 50% 60% at 82% 30%, color-mix(in srgb, var(--nebula-steel) 26%, transparent), transparent 66%);
-  filter: blur(36px) saturate(0.9);
-  transform: translate3d(0, 0, 0);
-  transition: transform var(--duration-atmosphere) var(--ease-standard);
+    radial-gradient(ellipse 62% 48% at 8% 18%, color-mix(in srgb, var(--nebula-mint) 46%, transparent), transparent 68%),
+    radial-gradient(ellipse 54% 66% at 94% 34%, color-mix(in srgb, var(--nebula-steel) 38%, transparent), transparent 66%),
+    radial-gradient(ellipse 58% 34% at 48% 106%, color-mix(in srgb, var(--accent-dim) 32%, transparent), transparent 70%);
+  filter: blur(24px) saturate(0.86);
+  transform: translate3d(var(--nebula-far-x), var(--nebula-far-y), 0) scale(1.05);
+  transition: opacity 1500ms var(--ease-standard), transform 1500ms var(--ease-standard);
+}
+
+/* accreatio's home atmosphere, adapted to the AEKR palette. The full-screen
+   procedural pass uses the same overscan and 1050ms mouse parallax response. */
+.atmosphere__webgl {
+  display: block;
+  z-index: 2;
+  inset: -7%;
+  width: 114%;
+  height: 114%;
+  opacity: calc(var(--atmosphere-density) * 0.92);
+  filter: saturate(1.02);
+  -webkit-mask-image: linear-gradient(to left, black 0 34%, color-mix(in srgb, black 88%, transparent) 58%, color-mix(in srgb, black 38%, transparent) 82%, transparent 100%);
+  mask-image: linear-gradient(to left, black 0 34%, color-mix(in srgb, black 88%, transparent) 58%, color-mix(in srgb, black 38%, transparent) 82%, transparent 100%);
+  transform: translate3d(var(--nebula-pointer-x), var(--nebula-pointer-y), 0) scale(1.08);
+  transform-origin: center;
+  transition: transform 1050ms var(--ease-standard);
+}
+
+.atmosphere[data-renderer="webgl"] .atmosphere__nebula {
+  opacity: calc(var(--atmosphere-density) * 0.16);
+}
+
+.atmosphere[data-paused] .atmosphere__webgl,
+.atmosphere[data-paused] .atmosphere__nebula {
+  transition: none;
 }
 
 .atmosphere__cursor-field {
-  opacity: calc(var(--atmosphere-density) * 0.6);
-  background: radial-gradient(24rem circle at var(--cursor-x) var(--cursor-y), color-mix(in srgb, var(--nebula-mint) 12%, transparent), transparent 72%);
-  transition: background-position var(--duration-atmosphere) var(--ease-standard);
+  z-index: 3;
+  opacity: calc(var(--atmosphere-density) * 0.5);
+  background: radial-gradient(28rem circle at var(--nebula-cursor-x) var(--nebula-cursor-y), color-mix(in srgb, var(--nebula-steel) 10%, transparent), transparent 70%);
 }
 
 .atmosphere__scrim {
+  z-index: 4;
   background:
-    radial-gradient(ellipse 55% 60% at 50% 30%, color-mix(in srgb, var(--bg) 55%, transparent) 0 30%, transparent 78%),
-    linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), transparent 22% 62%, var(--bg) 92%);
+    radial-gradient(ellipse 42% 62% at 50% 48%, color-mix(in srgb, var(--bg) 68%, transparent) 0 28%, color-mix(in srgb, var(--bg) 38%, transparent) 58%, transparent 82%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--bg) 28%, transparent), transparent 22% 72%, color-mix(in srgb, var(--bg) 42%, transparent));
 }
 
 .site-header,
@@ -172,20 +205,6 @@ p {
 .skip-link:focus {
   left: 0;
   top: 0;
-}
-
-/* --------------------------------------------------------------------------
-   Terminal-letter signature
-
-   The final alphabetic character of a sentence-like passage, in the AEKR
-   green. Authored directly in the markup so there is no post-render DOM
-   mutation, no layout shift, and nothing for a screen reader to stumble on —
-   the character is read inline as part of the surrounding word.
-   -------------------------------------------------------------------------- */
-
-.terminal-glyph {
-  color: var(--aekr-green);
-  font-weight: 700;
 }
 
 /* ==========================================================================

@@ -7,9 +7,18 @@
 The public website for **aekr.io** — AEKR is an AI-native, human-orchestrated
 software engineering practice.
 
-- **Status:** live
-- **Route:** local-first (no build step)
-- **Governance:** Lean — public, static, low-risk
+- **Status:** public website; verify the exact deployment before reporting an increment live
+- **Route:** local editing and checks; Cloudflare hosting (no website build step)
+- **Governance:** Lean / Mode 0 — public information and a bounded email endpoint
+
+Open the [interactive Project Map](PROJECT_MAP.html) directly from disk for
+repository orientation. [Conceptual map](PROJECT_MAP.md) ·
+[Machine-readable structure](project-map.json).
+
+[Project decisions and operating guide](docs/master.md) records scope, authority,
+upstream provenance, the explicit Racking branding variance and verification
+boundaries. Read [MASTER_SWITCH.md](MASTER_SWITCH.md) and [AGENTS.md](AGENTS.md)
+before substantive repository work.
 
 ## Stack
 
@@ -35,6 +44,18 @@ aekr-web/
 │       └── AEKR-BANNER-LICENSE.txt
 ├── src/
 │   └── index.js              ← Worker: POST /api/contact, else static assets
+├── assets/                  ← canonical README/map banner and license (not served)
+├── docs/master.md           ← concise source of truth and operating guide
+├── PROJECT_MAP.html         ← standalone interactive repository map
+├── PROJECT_MAP.md
+├── project-map.json         ← canonical map structure
+├── MASTER_SWITCH.md
+├── AGENTS.md
+├── OWNER_PROFILE.md
+├── aekr-scaffold.json
+├── tools/                   ← local integrity validators and provenance
+├── .github/workflows/       ← validation-only CI
+├── package.json             ← dependency-free local check command
 ├── wrangler.jsonc
 ├── LICENSE
 └── README.md
@@ -42,22 +63,18 @@ aekr-web/
 
 ### Brand assets
 
-All three PNGs carry real alpha. They were flattened against a near-black
+The three website PNGs in `public/assets/` carry real alpha. They were flattened against a near-black
 field originally, which showed as a visible rectangle on the page background;
 the field is now keyed out so they composite cleanly over any dark surface.
 If you replace them, keep the transparency — do not re-export onto a solid
 background.
 
-### Terminal-letter signature
+### Nebula source attribution
 
-Sentence-like prose ends with its final alphabetic character wrapped in
-`<span class="terminal-glyph">`, which renders it bold in the AEKR green.
-Terminal punctuation stays outside the span. It is authored directly in the
-markup — no post-render DOM mutation — so there is no layout shift and screen
-readers read the sentence normally.
-
-It applies to prose only. Navigation, buttons, form labels, badges, and
-one-word list items are deliberately excluded.
+The nebula rendering in `public/script.js` was adapted from Ed's accreatio source
+under his explicit authorization for this website. That portion retains its
+source copyright and reserved rights; the repository's general MIT license does
+not silently relicense accreatio or grant broader reuse rights to its source.
 
 ## Contact form
 
@@ -86,6 +103,19 @@ If either the secret or the `EMAIL` binding is missing, the endpoint returns
 `503` and the form shows a failure. It never reports success for a message it
 did not send.
 
+## Validation
+
+Use Node 22 or newer. No dependency installation or credentials are needed:
+
+```sh
+npm run check
+```
+
+The checks validate syntax, local references, deployment boundaries, the Project
+Map and the declared AEKR scaffold variant. CI repeats the same command on pushes
+and pull requests. It does not deploy the site or prove live email delivery.
+Visual and keyboard checks remain part of review for frontend/map changes.
+
 ## Local preview
 
 ```
@@ -95,17 +125,35 @@ npx wrangler dev
 Serves the static assets and the Worker together. Email sends are not
 delivered locally unless the `send_email` binding is marked `"remote": true`.
 
-## Deployment
+## Deployment and rollback
 
-Cloudflare Workers with static assets, custom domain `aekr.io`. Deploy from
-the repo root:
+[Verified pre-refresh backup and rollback instructions](docs/rollback.md).
 
-```
+Cloudflare Workers with static assets serves `aekr.io`. Only `public/` is the
+static asset directory; repository documentation and tools are not published.
+The existing Cloudflare Workers Builds integration can deploy the configured
+branch after a push. The validation workflow is separate: verify both results
+for the exact commit and do not assume deployment waits for validation.
+
+Before authorized delivery, run the checks, review the diff, and record the
+currently deployed version. Observe the new Cloudflare build/version and smoke
+check the homepage, asset responses, 404 page and contact error handling. A
+successful local check or push is not a production result.
+
+For a separately authorized manual deployment with the existing account session:
+
+```sh
 npx wrangler deploy
 ```
+
+If the new version fails verification, restore the previously recorded Worker
+version through Cloudflare's deployment controls, then repeat the smoke checks.
+For source recovery, revert the bounded change through normal Git history;
+avoid rewriting the shared branch. Never infer inbox delivery from HTTP success
+without checking a separately authorized test message.
 
 ---
 
 Built with the **AI Engineering Knowledge Racking (AEKR)** workflow.
 
-![Build with AEKR](public/assets/aekr-banner.png)
+![Build with AEKR](assets/aekr-banner.png)

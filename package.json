@@ -1,0 +1,14 @@
+{
+  "name": "aekr-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The public AEKR website and its repository validation tools.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node tools/check.mjs",
+    "check:map": "node tools/aekr/validate-project-map.mjs PROJECT_MAP.html project-map.json ."
+  }
+}

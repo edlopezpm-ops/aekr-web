@@ -1,0 +1,135 @@
+{
+  "baseline_commit": "17b712c1fdbefe43c64abc2c9c36b3a4bfa50eee",
+  "artifacts": [
+    {
+      "path": ".github/workflows/validate.yml",
+      "size_bytes": 413,
+      "sha256": "21b8835d3ee12c0bac2e090bda7d3a2f412d00ec3e99b52e92e6f2a20d7033c5"
+    },
+    {
+      "path": ".gitignore",
+      "size_bytes": 223,
+      "sha256": "06eb3d523ee95000560a69ef523c08308876be24b5596738bafa8fd9792d67e9"
+    },
+    {
+      "path": "AGENTS.md",
+      "size_bytes": 32043,
+      "sha256": "a346bc9a1eabcb3f6ca2b916cfc35683c59b5bdd36c2f1b42090de6eff71311a"
+    },
+    {
+      "path": "MASTER_SWITCH.md",
+      "size_bytes": 15478,
+      "sha256": "bdbf344aaf660bf72482d58cd50bdd3d5d4ee022ff99b86ff7dc9edfc6b21c69"
+    },
+    {
+      "path": "OWNER_PROFILE.md",
+      "size_bytes": 675,
+      "sha256": "fd02fa7464ca5b1efe818c949658fe6ca1b904fce1edcc75d0d00bbe90f886a9"
+    },
+    {
+      "path": "PROJECT_MAP.html",
+      "size_bytes": 28402,
+      "sha256": "459217dfbb8b6835e2d89e6a292470474b33c0c48b9ecc0a898223fc094d9a49"
+    },
+    {
+      "path": "PROJECT_MAP.md",
+      "size_bytes": 1790,
+      "sha256": "6fdb0e94027c9851f22256cf2de25398a400d677bb41cfada80a11498e8997a2"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 6143,
+      "sha256": "b32854cebc8b5650f57fb87f6d8c53b7be1b5f40fce5f314684a766b2325fdb5"
+    },
+    {
+      "path": "aekr-scaffold.json",
+      "size_bytes": 734,
+      "sha256": "efafbfa5339b1d0545f4df580fa51ccbda62a7258cf7be1e02fe2414d1483d45"
+    },
+    {
+      "path": "assets/AEKR-BANNER-LICENSE.txt",
+      "size_bytes": 1349,
+      "sha256": "fa138a953a6c531e43113361f013ddbf4d3b203c72e04f27dc7a8dcb6a9a3f1c"
+    },
+    {
+      "path": "assets/aekr-banner.png",
+      "size_bytes": 938282,
+      "sha256": "21f2dbd1bbda47af39d8d5727ab0e3495e71d31e7264b4ec43c91a1c6b1a0142"
+    },
+    {
+      "path": "docs/master.md",
+      "size_bytes": 10381,
+      "sha256": "917f8b64414fa296aa0e597808bbf9dc13f8498769572a3c74c822524b0686b8"
+    },
+    {
+      "path": "docs/rollback.md",
+      "size_bytes": 1013,
+      "sha256": "303ed5baedcbb84731d8d04966d431c6bc915409145c1954e6307c285b0087ed"
+    },
+    {
+      "path": "docs/verification-2026-09-04.md",
+      "size_bytes": 3869,
+      "sha256": "1871e8b8adea629b7ce19d34a16b1a6eec053e1172841b16e0f1b960544bd9ea"
+    },
+    {
+      "path": "package.json",
+      "size_bytes": 359,
+      "sha256": "4bfb0ceaf92dcd7e76b9504359634158727ec3a0e855a190faa8fdbcacbe8c3f"
+    },
+    {
+      "path": "project-map.json",
+      "size_bytes": 4900,
+      "sha256": "505f59cc79b630812c3a36dbff094391c198f0dbfd1c16a6ff1c859c18f56054"
+    },
+    {
+      "path": "public/404.html",
+      "size_bytes": 1124,
+      "sha256": "0229e96968cc985c7f7c11aae52800b56996d62f24d9eb7f323cb73a419bd770"
+    },
+    {
+      "path": "public/index.html",
+      "size_bytes": 14612,
+      "sha256": "761a8ace356fa9b7c671eff947cfa9fa9cdffd444ab7fd4360e589b2f1eb672e"
+    },
+    {
+      "path": "public/script.js",
+      "size_bytes": 22510,
+      "sha256": "f870e2b1a0775ce652be20bfcf0a7cc46b925fc8b9959d10d186671473c875b1"
+    },
+    {
+      "path": "public/styles.css",
+      "size_bytes": 21363,
+      "sha256": "bcb181757c8bcd81395e77a7ba4ce245499674f25b56d07854ee2031214d80e9"
+    },
+    {
+      "path": "tests/atmosphere.cjs",
+      "size_bytes": 6583,
+      "sha256": "c20de0e7878a92b4cc5d1b0c3f52c12309ec1c1c7b62af87c86d8a1be7847a3d"
+    },
+    {
+      "path": "tests/validator-urls.cjs",
+      "size_bytes": 2032,
+      "sha256": "f3433b39dfa4375a80ff0da1bb3f597f6cbb943da6d4cbf0f452bca63d697250"
+    },
+    {
+      "path": "tools/aekr/provenance.json",
+      "size_bytes": 1523,
+      "sha256": "60b4e94c6ace02cd844b6c86624ff0a0435d40f805bcaabb7775725ed7e76298"
+    },
+    {
+      "path": "tools/aekr/validate-generated-project.mjs",
+      "size_bytes": 109344,
+      "sha256": "3b8fe56cdf5c62129f69778dbec4eea33446d44ae5efb62f609cf008b2e6b94a"
+    },
+    {
+      "path": "tools/aekr/validate-project-map.mjs",
+      "size_bytes": 27517,
+      "sha256": "729f473d39a45ee1b28e3b0dc46da1b2f2663dcbe1c1cec580835a3db67f586b"
+    },
+    {
+      "path": "tools/check.mjs",
+      "size_bytes": 7347,
+      "sha256": "4b66623491294f9d2d3541b624d4e17f72ba5920e9ab75dabc637a299470fec8"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "$schema_note": "Canonical structural contract. HTML embeds matching identifiers, paths and hierarchy for autonomous offline navigation.",
+  "repo": {
+    "name": "aekr-web",
+    "alias": null,
+    "schemaVersion": 2,
+    "lastUpdated": "2026-09-04",
+    "root": {
+      "id": "project-root",
+      "path": "README.md",
+      "summary": "Public AEKR website, contact boundary and its engineering workspace."
+    }
+  },
+  "clusters": [
+    {
+      "id": "website",
+      "label": "Public website",
+      "summary": "Visitor-facing content and presentation.",
+      "nodes": [
+        {
+          "id": "homepage",
+          "path": "public/index.html",
+          "authority": "implementation",
+          "summary": "Explains the AEKR practice and presents contact and pricing-request forms."
+        },
+        {
+          "id": "styles",
+          "path": "public/styles.css",
+          "authority": "implementation",
+          "summary": "Controls responsive layout, typography, focus treatment and visual presentation."
+        },
+        {
+          "id": "browser-script",
+          "path": "public/script.js",
+          "authority": "implementation",
+          "summary": "Controls the decorative background and contact submission experience."
+        },
+        {
+          "id": "site-assets",
+          "path": "public/assets/",
+          "authority": "implementation",
+          "summary": "Holds local website artwork and its license."
+        },
+        {
+          "id": "not-found",
+          "path": "public/404.html",
+          "authority": "implementation",
+          "summary": "Provides an accessible route back when a requested page does not exist."
+        },
+        {
+          "id": "headers",
+          "path": "public/_headers",
+          "authority": "configuration",
+          "summary": "Declares browser protection and asset caching headers for static responses."
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Runtime and delivery",
+      "summary": "The email boundary, hosting configuration and repeatable checks.",
+      "nodes": [
+        {
+          "id": "worker",
+          "path": "src/index.js",
+          "authority": "implementation",
+          "summary": "Validates contact requests and sends email through the server-side binding."
+        },
+        {
+          "id": "hosting",
+          "path": "wrangler.jsonc",
+          "authority": "configuration",
+          "summary": "Selects the server function entrypoint, public asset directory and email binding."
+        },
+        {
+          "id": "checks",
+          "path": "tools/check.mjs",
+          "authority": "implementation",
+          "summary": "Runs dependency-free integrity, syntax and source-boundary checks."
+        },
+        {
+          "id": "validation-ci",
+          "path": ".github/workflows/validate.yml",
+          "authority": "configuration",
+          "summary": "Repeats the repository checks on GitHub events."
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "label": "Project governance",
+      "summary": "Local authority, operating decisions and traceable scaffolds.",
+      "nodes": [
+        {
+          "id": "operating-guide",
+          "path": "docs/master.md",
+          "authority": "canonical",
+          "summary": "Defines project scope, risk profile, operating rules and verification boundaries."
+        },
+        {
+          "id": "switchboard",
+          "path": "MASTER_SWITCH.md",
+          "authority": "canonical",
+          "summary": "Owns the project capability states and their authorized routing rules."
+        },
+        {
+          "id": "constitution",
+          "path": "AGENTS.md",
+          "authority": "canonical",
+          "summary": "Supplies the unchanged portable engineering and collaboration contract."
+        },
+        {
+          "id": "owner",
+          "path": "OWNER_PROFILE.md",
+          "authority": "canonical",
+          "summary": "Calibrates communication and identifies the project owner."
+        },
+        {
+          "id": "scaffold",
+          "path": "aekr-scaffold.json",
+          "authority": "configuration",
+          "summary": "Declares the selected local scaffold profile and pinned core identity."
+        },
+        {
+          "id": "aekr-tools",
+          "path": "tools/aekr/",
+          "authority": "implementation",
+          "summary": "Contains portable validators and provenance pins."
+        },
+        {
+          "id": "repository-brand",
+          "path": "assets/",
+          "authority": "derived",
+          "summary": "Contains the canonical local README and Project Map banner and license."
+        },
+        {
+          "id": "map-contract",
+          "path": "project-map.json",
+          "authority": "canonical",
+          "summary": "Defines stable map identifiers, real paths and component hierarchy."
+        }
+      ]
+    }
+  ]
+}

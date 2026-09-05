@@ -1,0 +1,15 @@
+{
+  "source_repository": "https://github.com/edlopezpm-ops/AEKR",
+  "source_commit": "5275f67494b7fbd2762eaedc645a162fc40922cf",
+  "variant": "aekr-web-racking-public-url",
+  "upstream_generated_validator_sha256": "019b38a55e2b211ccab524e27ffae22772328e4d19bb0ab61fef9e5cb24bd3e3",
+  "upstream_projection_sha256": "D1318287B455D763F93B686D6A6D9806BBC18EECB56DF9C34CD8C6BD0B0DA13C",
+  "local_sha256": {
+    "AGENTS.md": "a346bc9a1eabcb3f6ca2b916cfc35683c59b5bdd36c2f1b42090de6eff71311a",
+    "tools/aekr/validate-project-map.mjs": "729f473d39a45ee1b28e3b0dc46da1b2f2663dcbe1c1cec580835a3db67f586b",
+    "assets/aekr-banner.png": "21f2dbd1bbda47af39d8d5727ab0e3495e71d31e7264b4ec43c91a1c6b1a0142",
+    "assets/AEKR-BANNER-LICENSE.txt": "fa138a953a6c531e43113361f013ddbf4d3b203c72e04f27dc7a8dcb6a9a3f1c",
+    "tools/aekr/validate-generated-project.mjs": "3b8fe56cdf5c62129f69778dbec4eea33446d44ae5efb62f609cf008b2e6b94a"
+  },
+  "scope": "Three branding phrase replacements; five delimited insertions validate public HTML root-relative URL attributes against public/ and recognize the exact contact pathname comparator/form action/client fallback and existing assets wildcard in public/_headers and the existing email HTML closing tags in src/index.js; the exact canonical website license copy is digest-checked then treated like the canonical root license; self-integrity digest recomputed. Removing only these insertions and branding substitutions reconstructs the upstream validator. No unmodified upstream PASS claimed."
+}
