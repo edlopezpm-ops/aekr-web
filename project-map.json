@@ -4,7 +4,7 @@
     "name": "aekr-web",
     "alias": null,
     "schemaVersion": 2,
-    "lastUpdated": "2026-09-04",
+    "lastUpdated": "2026-09-05",
     "root": {
       "id": "project-root",
       "path": "README.md",
@@ -34,6 +34,12 @@
           "path": "public/script.js",
           "authority": "implementation",
           "summary": "Controls the decorative background and contact submission experience."
+        },
+        {
+          "id": "section-navigation",
+          "path": "public/sections.js",
+          "authority": "implementation",
+          "summary": "Coordinates individual section views, accessible navigation, history and bounded gestures."
         },
         {
           "id": "site-assets",

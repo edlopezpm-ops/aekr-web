@@ -5,6 +5,67 @@
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
 
+## Section navigation increment — 2026-09-05
+
+Ed authorized replacing continuous page scrolling with fading individual views,
+six clickable green navigation bars, and a fixed low footer; existing section
+copy and artwork remain intact. The hero remains the opening view, reachable
+through the home wordmark. Commit, push, a new PR and delivery are authorized;
+Ed also authorized unblocking kommiBo for this PR's bounded review operation.
+That instruction does not require activating unrelated scheduled jobs.
+
+Before implementation, the clean base was refreshed to `d302880`, including the
+concurrent approved README-banner update. Its active Cloudflare version was
+`4e45360c-54ea-40f2-8eeb-b3cf639f220f`. A complete verified Git bundle and the
+recovery tag `rollback/aekr-web-pre-section-transitions-2026-09-05` preserve it.
+
+Minimum sufficient change: the existing page already has a hero, six named
+sections and working hash links. Reuse those boundaries and their entire
+contents, add one vanilla browser controller, and scope layout changes to its
+enhancement class. Remove unrelated copy, nebula, Worker and hosting work from
+scope. Native overflow, focus/inert, history and CSS transitions provide the
+required primitives; the existing framework-free platform needs no new runtime
+dependency, router framework, public API or configuration surface. The new
+controller owns view selection and input coordination separately from the
+unchanged atmosphere/contact script. Root cause: the original normal document
+flow exposes every section continuously and anchors only scroll the document.
+
+This is a mixed task: visual judgment chooses the transition/layout; deterministic
+state and browser checks verify navigation, focus, scroll boundaries and recovery.
+Hidden scrollbars do not remove overflow access: tall sections scroll within
+their own view before a fresh gesture advances. Header/footer bounds reserve
+space, inactive views leave the focus/accessibility tree, and reduced motion
+removes fades. Without JavaScript the existing document flow remains available.
+Verification covers desktop, narrow/short mobile layouts, keyboard, touch,
+history/deep links, form preservation, reduced motion and the unchanged content.
+Separate-author focused review applies; this is not a phase-closing Full Audit.
+
+Implementation result: one 206-line controller, 12 added HTML lines and 311
+enhancement-scoped CSS lines; section inner markup and the atmosphere/contact
+script are unchanged. The other changed leaves are the three Project Map files,
+this guide, README, package scripts, syntax-check coverage and a real-browser
+regression suite. Added decision branches serve gesture boundaries, history,
+focus, motion preferences and viewport measurement; no router abstraction,
+runtime dependency, server contract or deployment configuration was added.
+The optional browser check reuses an existing Playwright/browser installation
+and introduces only explicit test-process inputs, outside the website runtime.
+
+Verification passed: existing repository/provenance checks, actual intermediate
+fade opacity, all six destinations, wheel reversal and momentum containment,
+history/reload, keyboard from navigation links, native mobile touch, failed-form
+draft preservation, reduced motion, no-JavaScript fallback and exact original
+section markup. Brave covered desktop, 390- and 320-pixel phones, short landscape
+and 320-pixel layouts with text enlarged to 200%. Separate review found and
+resolved keyboard edge navigation and enlarged-text clipping; final panel and
+fixed-control bounds pass. No unresolved minimality finding remains. A closed
+changed-output manifest, browser captures, verified bundle restoration and the
+separate review receipt accompany the recovery record outside the public tree.
+The kommiBo operation uses its unchanged GitHub adapter with a single-repository,
+single-PR permit and a separate-author technical receipt; its local one-use
+control returns to PAUSED after that operation. This is not activation of its
+global scheduler or a claim of human acceptance. Production readback remains
+a separate delivery step tied to the merged commit and live asset bytes.
+
 ## Purpose and boundaries
 
 Explain AEKR's engineering practice and let visitors request contact or pricing.
