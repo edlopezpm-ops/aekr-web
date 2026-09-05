@@ -110,7 +110,6 @@
     ['Back to the introduction', 'Volver a la introducción'],
     ['Back', 'Volver'],
     ['Build with AEKR', 'Construye con AEKR'],
-    ['Language', 'Idioma'],
     ['AEKR — introduction.', 'AEKR — introducción.'],
     ['AEKR introduction', 'Introducción de AEKR'],
     ['Section', 'Sección'],
@@ -133,19 +132,10 @@
 
   const control = document.createElement('div');
   control.className = 'language-control';
-  const label = document.createElement('label');
-  label.htmlFor = 'site-language';
-  label.textContent = 'Language';
-  const select = document.createElement('select');
-  select.id = 'site-language';
-  for (const [value, name] of [['en', 'English'], ['es', 'Español']]) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.lang = value;
-    option.textContent = name;
-    select.append(option);
-  }
-  control.append(label, select);
+  const button = document.createElement('button');
+  button.id = 'site-language';
+  button.type = 'button';
+  control.append(button);
   header.insertBefore(control, contact);
 
   // Preserve the existing inline spans; these five final fragments need their
@@ -189,16 +179,17 @@
   function applyLanguage(next) {
     language = next;
     document.documentElement.lang = language;
-    select.value = language;
-    label.textContent = text('Language');
+    button.textContent = language === 'es' ? 'SP' : 'EN';
+    button.setAttribute('aria-label', language === 'es'
+      ? 'SP: Español. Cambiar a inglés.'
+      : 'EN: English. Switch to Spanish.');
     for (const entry of nodes) entry.node.data = entry[language === 'es' ? 'spanish' : 'english'];
     for (const entry of attributes) entry.element.setAttribute(entry.name, entry[language === 'es' ? 'spanish' : 'english']);
     document.dispatchEvent(new CustomEvent('aekr:languagechange', { detail: { language } }));
   }
 
-  select.addEventListener('change', () => {
-    const next = select.value;
-    if (next !== 'en' && next !== 'es') { select.value = language; return; }
+  button.addEventListener('click', () => {
+    const next = language === 'en' ? 'es' : 'en';
     try { localStorage.setItem(storageKey, next); }
     catch { /* The explicit choice still works for the current page. */ }
     applyLanguage(next);

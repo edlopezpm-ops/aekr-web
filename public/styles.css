@@ -452,16 +452,6 @@ main {
   visibility: visible;
 }
 
-.hero-particles {
-  position: absolute;
-  pointer-events: none;
-}
-
-.hero-story[data-phase="forming"] .hero-phrase.is-current,
-.hero-story[data-phase="dispersing"] .hero-phrase.is-current {
-  visibility: hidden;
-}
-
 .hero-pause {
   position: absolute;
   right: -10px;
@@ -1145,8 +1135,7 @@ main {
   display: none;
 }
 
-.brand-traveler,
-.brand-particles {
+.brand-traveler {
   position: fixed;
   top: 0;
   left: 0;
@@ -1156,8 +1145,7 @@ main {
   pointer-events: none;
 }
 
-.brand-traveler[hidden],
-.brand-particles[hidden] {
+.brand-traveler[hidden] {
   display: none;
 }
 
@@ -1470,12 +1458,8 @@ main {
   font-size: .8rem;
 }
 
-.language-control label {
-  flex-shrink: 0;
-}
-
-.language-control select {
-  min-width: max-content;
+.language-control button {
+  min-width: 44px;
   min-height: 44px;
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -1501,10 +1485,6 @@ main {
   padding: 4px 12px 12px;
   border-bottom: 1px solid var(--border-soft);
   font-size: .9rem;
-}
-
-.sections-enabled.sections-compact .language-control select {
-  flex: 1 1 100px;
 }
 
 /* One compact shell reuses the desktop anchors and selected section. The

@@ -77,6 +77,17 @@ async function go(page, id) {
   } else await (await sectionLink(page, id)).click();
   await active(page, id);
 }
+async function chooseLanguage(page, language) {
+  const button = page.locator('#site-language');
+  if (await page.locator('html').getAttribute('lang') !== language) {
+    if (!await button.isVisible()) await page.locator('.section-menu-toggle').click();
+    await button.click();
+  }
+  await page.waitForFunction(language => document.documentElement.lang === language, language);
+  assert.equal((await button.textContent()).trim(), language === 'es' ? 'SP' : 'EN');
+  assert.equal(await button.getAttribute('aria-label'), language === 'es'
+    ? 'SP: Español. Cambiar a inglés.' : 'EN: English. Switch to Spanish.');
+}
 async function edge(page, bottom) {
   await page.locator('.section-panel.is-active').evaluate((p, bottom) => { p.scrollTop = bottom ? p.scrollHeight : 0; }, bottom);
   await page.waitForTimeout(300);
@@ -92,7 +103,7 @@ async function geometry(page) {
       contentWidth: document.querySelector('.section-panel.is-active').scrollWidth,
       footer: { top: f.top, bottom: f.bottom }, headerBottom: h.bottom,
       scrollbar: getComputedStyle(document.querySelector('.section-panel.is-active')).scrollbarWidth,
-      controls: [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta, .section-nav a, .brand-dock, .language-control select')]
+      controls: [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta, .section-nav a, .brand-dock, #site-language')]
         .filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => {
         const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       }),
@@ -117,16 +128,10 @@ async function brandFrame(page) {
       return { x: r.x, y: r.y, width: r.width, height: r.height, cx: r.x + r.width / 2,
         cy: r.y + r.height / 2, opacity: Number(s.opacity), visible: el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
     };
-    const canvas = document.querySelector('.brand-particles');
-    let pixels = 0, signature = 0;
-    if (canvas && !canvas.hidden) {
-      const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-      for (let i = 3; i < data.length; i += 4) if (data[i] > 12) {
-        pixels++; signature = (signature + i * data[i]) % 1000000007;
-      }
-    }
-    return { smoke: { pixels, signature, hidden: !canvas || canvas.hidden,
-      area: canvas ? canvas.width * canvas.height : 0 }, hero: box(document.querySelector('.hero-mark')), traveler: box(document.querySelector('.brand-traveler')),
+    const original = document.querySelector('.hero-mark'), traveler = document.querySelector('.brand-traveler');
+    return { bitmap: { ready: traveler.complete && traveler.naturalWidth > 0,
+      source: traveler.currentSrc, original: original.currentSrc },
+      hero: box(original), traveler: box(traveler),
       dock: box(document.querySelector('.brand-dock')), header: box(document.querySelector('.site-header')),
       docked: document.documentElement.classList.contains('brand-docked'), width: innerWidth,
       transitioning: document.querySelector('main').dataset.transitioning === 'true' };
@@ -140,15 +145,16 @@ async function brandJourney(page, label) {
   await (await sectionLink(page, 'practice')).click();
   await page.waitForTimeout(600);
   const moving = await brandFrame(page);
-  assert(moving.transitioning && !moving.hero.visible, 'The source symbol dissolves during its journey');
-  assert(moving.smoke.pixels > 100 && moving.smoke.area <= 900000, 'A bounded, visible smoke filament carries the official symbol');
+  assert(moving.transitioning && moving.traveler.visible && !moving.hero.visible, 'One intact symbol travels between hero and header');
+  assert(moving.bitmap.ready && moving.bitmap.source === moving.bitmap.original, 'The traveler uses the loaded original bitmap');
+  assert(moving.traveler.opacity > .99, 'The traveling symbol stays crisp and fully opaque');
+  assert(Math.abs(moving.traveler.cy - home.hero.cy) > 2, 'The bitmap actually leaves the hero position');
   await page.waitForTimeout(200);
-  assert.notEqual((await brandFrame(page)).smoke.signature, moving.smoke.signature, 'Real logo particles change position');
+  assert(Math.abs((await brandFrame(page)).traveler.cy - moving.traveler.cy) > 2, 'Bitmap position advances during the journey');
   if (shots) await page.screenshot({ path: path.join(shots, `${label}-outbound.png`) });
   await active(page, 'practice');
   const docked = await brandFrame(page);
   assert(docked.docked && docked.traveler.visible && !docked.hero.visible);
-  assert(docked.smoke.hidden || docked.smoke.pixels === 0, 'Settled header has no residual particles');
   assert(Math.abs(docked.traveler.cx - docked.width / 2) <= 1, 'Symbol docks at viewport center');
   assert(Math.abs(docked.traveler.cy - docked.dock.cy) <= 1, 'Symbol meets the real header anchor');
   assert(docked.header.height > home.header.height + 8, 'Header grows when leaving home');
@@ -159,7 +165,9 @@ async function brandJourney(page, label) {
   await page.locator('.brand-dock').click();
   await page.waitForTimeout(600);
   const returning = await brandFrame(page);
-  assert(returning.transitioning && returning.smoke.pixels > 100, 'The reverse route also travels as smoke');
+  assert(returning.transitioning && returning.traveler.visible && !returning.hero.visible, 'The reverse route keeps one intact bitmap');
+  assert(returning.traveler.opacity > .99 && Math.abs(returning.traveler.cy - stable.traveler.cy) > 2,
+    'The opaque symbol actually travels back toward the hero');
   if (shots) await page.screenshot({ path: path.join(shots, `${label}-return.png`) });
   await active(page, 'main');
   const restored = await brandFrame(page);
@@ -171,8 +179,11 @@ async function brandJourney(page, label) {
 try {
   const page = await open({ viewport: { width: 1440, height: 1000 } });
   await active(page, 'main'); await geometry(page);
+  assert.equal(await page.locator('.hero-particles, .brand-particles').count(), 0, 'Phrase and symbol particle layers are removed');
+  assert(await page.locator('canvas').evaluateAll(canvases => canvases.every(canvas => canvas.closest('.atmosphere'))),
+    'Only the unchanged atmosphere owns Canvas elements');
   await brandJourney(page, 'desktop-brand');
-  console.log('PASS: official symbol smoke travel, bounded canvas, centered dock, stable header and reverse return');
+  console.log('PASS: original bitmap travel, centered dock, stable header and reverse return without particle layers');
   if (process.env.BASELINE_REF && !process.env.SITE_URL) {
     const baseline = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/index.html`], { cwd: root, encoding: 'utf8' });
     const current = await readFile(path.join(root, 'public/index.html'), 'utf8');
@@ -186,7 +197,7 @@ try {
     }, { baseline, current });
     assert(same, 'Unchanged sections/form/footer retain markup; all lifecycle wording is preserved');
     const sources = { 'index.html': baseline };
-    for (const file of ['styles.css', 'script.js', 'sections.js']) {
+    for (const file of ['styles.css', 'script.js', 'sections.js', 'i18n.js']) {
       sources[file] = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/${file}`], { cwd: root, encoding: 'utf8' });
     }
     const currentScript = await readFile(path.join(root, 'public/script.js'), 'utf8');
@@ -221,7 +232,7 @@ try {
     assert(newLifecycle.aside && newLifecycle.fits && newLifecycle.centerOffset < 1, 'Interferometry is centered beside the stages');
     assert.deepEqual(newLifecycle, oldLifecycle, 'Desktop Interferometry retains its approved geometry');
     const upperGap = p => p.locator('.hero-story').evaluate(el => parseFloat(getComputedStyle(el).marginTop));
-    assert(await upperGap(page) > await upperGap(oldPage), 'The hero gains breathing room above the phrase');
+    assert.equal(await upperGap(page), await upperGap(oldPage), 'The approved phrase spacing is preserved');
     assert.equal((await page.locator('.contact-home').textContent()).trim(), 'Back');
     const desktopLayout = p => p.evaluate(() => {
       const elements = document.querySelectorAll('.site-header, .site-footer, .section-nav, .section-panel.is-active h2, .section-panel.is-active h3, .section-panel.is-active p, .section-panel.is-active li, .section-panel.is-active input, .section-panel.is-active textarea');
@@ -242,12 +253,7 @@ try {
     await oldPage.context().close();
   }
   const heroPage = await open({ viewport: { width: 1440, height: 1000 } }, '', {}, () => {
-    window.heroEvidence = { draws: 0, phases: [] };
-    const clear = CanvasRenderingContext2D.prototype.clearRect;
-    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
-      if (this.canvas.classList.contains('hero-particles')) window.heroEvidence.draws++;
-      return clear.apply(this, args);
-    };
+    window.heroEvidence = { phases: [] };
     new MutationObserver(records => {
       for (const record of records) {
         if (record.target.matches?.('.hero-story') && record.attributeName === 'data-phase') {
@@ -260,177 +266,108 @@ try {
   const phraseState = p => p.evaluate(() => {
     const current = document.querySelector('.hero-phrase.is-current');
     const rect = document.querySelector('.hero-story').getBoundingClientRect();
-    const style = getComputedStyle(current);
-    return { text: current.textContent, opacity: Number(style.opacity), transform: style.transform, filter: style.filter,
+    const style = getComputedStyle(current), transform = new DOMMatrixReadOnly(style.transform);
+    return { text: current.textContent, opacity: Number(style.opacity), filter: style.filter,
+      x: transform.m41, y: transform.m42, scaleX: transform.m11, scaleY: transform.m22,
       height: rect.height, top: rect.top,
+      animations: document.querySelector('.hero-story').getAnimations({ subtree: true }).length,
       visible: [...document.querySelectorAll('.hero-phrase')].filter(el => getComputedStyle(el).visibility === 'visible').length };
   });
-  const particlePixels = p => p.locator('.hero-particles').evaluate(canvas => {
-    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-    let count = 0, signature = 0;
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 32) { count++; signature = (signature + i * data[i]) % 1000000007; }
-    }
-    return { count, signature, hidden: canvas.hidden };
-  });
-  await phase(heroPage, 'forming'); await heroPage.waitForTimeout(150);
-  const cloud = await particlePixels(heroPage);
-  const particleCount = Number(await heroPage.locator('.hero-story').getAttribute('data-particle-count'));
-  assert(particleCount > 100 && particleCount <= 1600, 'A bounded cloud uses real glyph samples');
-  await heroPage.waitForTimeout(350);
-  const forming = await particlePixels(heroPage);
-  assert(cloud.count > 100 && forming.count > 100 && cloud.signature !== forming.signature, 'Actual particle pixels move while forming');
-  assert.equal((await phraseState(heroPage)).visible, 0, 'Particles supply the forming text');
-  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-particles-forming.png') });
+  const fullyReadable = state => {
+    assert.equal(state.visible, 1); assert.equal(state.opacity, 1);
+    assert.equal(state.x, 0); assert.equal(state.y, 0);
+    assert.equal(state.scaleX, 1); assert.equal(state.scaleY, 1); assert.equal(state.filter, 'none');
+    assert.equal(state.animations, 0, 'Reading has no active phrase animation');
+  };
   await phase(heroPage, 'dwell');
   const readable = await phraseState(heroPage);
-  assert.equal(readable.visible, 1); assert.equal(readable.opacity, 1);
-  assert.equal(readable.transform, 'none'); assert.equal(readable.filter, 'none');
-  assert.equal((await particlePixels(heroPage)).count, 0, 'The canvas clears for crisp DOM reading');
-  const drawCount = await heroPage.evaluate(() => window.heroEvidence.draws);
+  fullyReadable(readable);
+  assert.equal(readable.text, 'An AI-native, human-orchestrated engineering practice.', 'The first phrase is immediately readable');
   await heroPage.waitForTimeout(1000);
-  assert.deepEqual(await phraseState(heroPage), readable, 'The phrase is completely stationary during reading');
-  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), drawCount, 'No hero canvas draws during reading');
-  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-particles-dwell.png') });
-  await phase(heroPage, 'dispersing');
+  assert.deepEqual(await phraseState(heroPage), readable, 'The whole line is stationary during reading');
+  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-phrase-dwell.png') });
+  await phase(heroPage, 'leaving');
   const dwellDuration = await heroPage.evaluate(() => {
     const phases = window.heroEvidence.phases;
-    const end = phases.findIndex(p => p.phase === 'dispersing');
+    const end = phases.findIndex(p => p.phase === 'leaving');
     const start = phases.slice(0, end).findLast(p => p.phase === 'dwell');
     return phases[end].at - start.at;
   });
   assert(dwellDuration >= 2990 && dwellDuration < 3300, `Static reading lasts three seconds: ${dwellDuration} ms`);
-  assert((await particlePixels(heroPage)).count > 100, 'The phrase breaks back into particles');
-  await phase(heroPage, 'forming');
-  assert.notEqual((await phraseState(heroPage)).text, readable.text, 'The cloud reforms into a new phrase');
+  await heroPage.waitForTimeout(80);
+  const leaving = await phraseState(heroPage);
+  assert(leaving.opacity > 0 && leaving.opacity < 1 && leaving.y < 0 && leaving.y >= -2.01,
+    'The whole line fades out with at most two pixels of upward displacement');
+  assert.equal(leaving.visible, 1); assert.equal(leaving.filter, 'none');
+  assert.equal(leaving.scaleX, 1); assert.equal(leaving.scaleY, 1); assert.equal(leaving.x, 0);
+  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-phrase-leaving.png') });
+  await phase(heroPage, 'entering'); await heroPage.waitForTimeout(120);
+  const entering = await phraseState(heroPage);
+  assert.notEqual(entering.text, readable.text, 'The next phrase replaces the outgoing line');
+  assert(entering.opacity > 0 && entering.opacity < 1 && entering.y > 0 && entering.y <= 4.01,
+    'The next whole line fades in with at most four pixels of settling displacement');
+  assert.equal(entering.visible, 1); assert.equal(entering.filter, 'none');
+  assert.equal(entering.scaleX, 1); assert.equal(entering.scaleY, 1); assert.equal(entering.x, 0);
+  if (shots) await heroPage.screenshot({ path: path.join(shots, 'hero-phrase-entering.png') });
   await phase(heroPage, 'dwell');
+  fullyReadable(await phraseState(heroPage));
   assert.equal((await phraseState(heroPage)).height, readable.height, 'The loop reserves stable layout height');
-  await heroPage.locator('.hero-pause').click();
-  const pausedPhrase = await phraseState(heroPage), pausedDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
-  await heroPage.waitForTimeout(450);
-  assert.deepEqual(await phraseState(heroPage), pausedPhrase);
-  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), pausedDraws, 'User pause stops hero drawing');
-  await heroPage.locator('.hero-pause').click();
-  await phase(heroPage, 'dwell');
-  await go(heroPage, 'practice');
-  await phase(heroPage, 'paused');
-  const offDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
-  await heroPage.waitForTimeout(450);
-  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), offDraws, 'Off-section hero work is suspended');
+  for (const interruptedPhase of ['leaving', 'entering']) {
+    await phase(heroPage, interruptedPhase);
+    await heroPage.locator('.hero-pause').click();
+    await phase(heroPage, 'paused');
+    const paused = await phraseState(heroPage); fullyReadable(paused);
+    assert.equal(await heroPage.locator('.hero-pause').getAttribute('aria-pressed'), 'true');
+    await heroPage.waitForTimeout(700);
+    assert.deepEqual(await phraseState(heroPage), paused, 'Pause cancels an in-progress fade without a stale callback');
+    await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'dwell');
+  }
+  for (const changingPhase of ['dwell', 'leaving', 'entering']) {
+    await phase(heroPage, changingPhase);
+    const before = await phraseState(heroPage);
+    const language = await heroPage.locator('html').getAttribute('lang') === 'en' ? 'es' : 'en';
+    await chooseLanguage(heroPage, language); await phase(heroPage, 'dwell');
+    const translated = await phraseState(heroPage); fullyReadable(translated);
+    assert.notEqual(translated.text, before.text, 'Locale changes immediately settle the current line in its new language');
+    await heroPage.waitForTimeout(450);
+    assert.deepEqual(await phraseState(heroPage), translated, 'Canceled locale transitions cannot replace or hide the translated phrase');
+  }
+  await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'paused');
+  const pausedLanguage = await heroPage.locator('html').getAttribute('lang') === 'en' ? 'es' : 'en';
+  await chooseLanguage(heroPage, pausedLanguage); await phase(heroPage, 'paused');
+  fullyReadable(await phraseState(heroPage));
+  assert.equal(await heroPage.locator('.hero-pause').getAttribute('aria-pressed'), 'true');
+  await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'dwell');
+  await go(heroPage, 'practice'); await phase(heroPage, 'paused');
+  const offSection = await phraseState(heroPage); fullyReadable(offSection);
+  await heroPage.waitForTimeout(700);
+  assert.deepEqual(await phraseState(heroPage), offSection, 'Off-section phrase work is suspended');
   await go(heroPage, 'main'); await phase(heroPage, 'dwell');
-  // Exercise the visibilitychange contract without depending on headless tab policy.
+  await phase(heroPage, 'leaving');
+  // Exercise visibility cancellation without depending on headless tab policy.
   await heroPage.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await phase(heroPage, 'paused');
-  const hiddenDraws = await heroPage.evaluate(() => window.heroEvidence.draws);
-  await heroPage.waitForTimeout(450);
-  assert.equal(await heroPage.evaluate(() => window.heroEvidence.draws), hiddenDraws, 'Hidden-document event stops hero drawing');
+  const hidden = await phraseState(heroPage); fullyReadable(hidden);
+  await heroPage.waitForTimeout(700);
+  assert.deepEqual(await phraseState(heroPage), hidden, 'Hidden-document cancellation leaves no continuing phrase animation');
   await heroPage.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
   await phase(heroPage, 'dwell');
   await heroPage.setViewportSize({ width: 320, height: 568 });
   await heroPage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   await heroPage.locator('.hero-story').scrollIntoViewIfNeeded();
-  await phase(heroPage, 'dwell');
+  await phase(heroPage, 'dwell'); fullyReadable(await phraseState(heroPage));
   await geometry(heroPage);
-  await phase(heroPage, 'dispersing');
-  assert((await particlePixels(heroPage)).count > 100, 'Resizing and enlarged wrapping rebuild usable glyph targets');
-  await geometry(heroPage);
+  await phase(heroPage, 'entering'); await geometry(heroPage);
   await heroPage.locator('.hero-pause').focus();
   await heroPage.emulateMedia({ reducedMotion: 'reduce' });
   await heroPage.waitForFunction(() => document.querySelector('.hero-story').hidden);
   assert(await heroPage.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')));
   assert(await heroPage.locator('.hero').evaluate(el => el === document.activeElement), 'Motion preference changes recover focus from the hidden control');
   await heroPage.context().close();
-  console.log('PASS: real glyph particle motion, stationary three-second reading, loop, pause, suspension, resize and reduced motion');
-
-  for (const seed of [41, 311, 1024]) {
-    const protectedPause = await open({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 }, '', {}, {
-      content: `(() => {
-        let state = ${seed};
-        Math.random = () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; };
-        localStorage.setItem('aekr-language', 'es');
-      })();`,
-    });
-    for (let sample = 0; sample < 20; sample++) {
-      await protectedPause.waitForTimeout(45);
-      const hits = await protectedPause.evaluate(() => {
-        const canvas = document.querySelector('.hero-particles'), box = canvas.getBoundingClientRect();
-        const pause = document.querySelector('.hero-pause').getBoundingClientRect();
-        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-        let count = 0;
-        for (let i = 3; i < pixels.length; i += 4) {
-          if (pixels[i] <= 8) continue;
-          const pixel = (i - 3) / 4;
-          const x = box.left + (pixel % canvas.width + .5) / canvas.width * box.width;
-          const y = box.top + (Math.floor(pixel / canvas.width) + .5) / canvas.height * box.height;
-          if (x >= pause.left && x <= pause.right && y >= pause.top && y <= pause.bottom) count++;
-        }
-        return count;
-      });
-      assert.equal(hits, 0, `Organic cloud seed ${seed} leaves Pause visually clear`);
-    }
-    await protectedPause.context().close();
-  }
-  console.log('PASS: varied cloud seeds never paint over the lateral Pause control');
-
-  for (const fault of ['context', 'readback', 'blank', 'opaque']) {
-    const failing = await open({ viewport: { width: 1440, height: 1000 } }, '', {},
-      // Each failure is injected only at the optional hero Canvas boundary.
-      { content: `(() => {
-        const get = HTMLCanvasElement.prototype.getContext;
-        const read = CanvasRenderingContext2D.prototype.getImageData;
-        const masks = new WeakSet();
-        HTMLCanvasElement.prototype.getContext = function(type, options) {
-          if (${JSON.stringify(fault)} === 'context' && this.classList.contains('hero-particles')) return null;
-          if (this.classList.contains('hero-particle-mask')) masks.add(this);
-          return get.call(this, type, options);
-        };
-        CanvasRenderingContext2D.prototype.getImageData = function(...args) {
-          if (!masks.has(this.canvas)) return read.apply(this, args);
-          if (${JSON.stringify(fault)} === 'readback') throw new DOMException('Canvas readback unavailable', 'SecurityError');
-          const result = read.apply(this, args);
-          result.data.fill(${fault === 'opaque' ? 255 : 0});
-          return result;
-        };
-      })();` });
-    await failing.waitForFunction(() => document.querySelector('.hero-story').dataset.phase === 'fallback');
-    assert(await failing.locator('.hero-story').isHidden());
-    assert(await failing.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')));
-    await go(failing, 'practice'); await go(failing, 'main');
-    assert(await failing.locator('.hero-story').isHidden(), 'Failed enhancement stays on its readable fallback');
-    await failing.context().close();
-  }
-  console.log('PASS: unavailable Canvas, rejected readback and corrupt masks retain accessible static prose');
-
-  for (const failure of ['context', 'readback']) {
-    const fallback = await open({ viewport: { width: 1280, height: 900 } }, '', {}, {
-      content: `(() => {
-        const get = HTMLCanvasElement.prototype.getContext;
-        const read = CanvasRenderingContext2D.prototype.getImageData;
-        HTMLCanvasElement.prototype.getContext = function(type, options) {
-          if (${JSON.stringify(failure)} === 'context' && this.classList.contains('brand-particles')) return null;
-          return get.call(this, type, options);
-        };
-        CanvasRenderingContext2D.prototype.getImageData = function(...args) {
-          if (${JSON.stringify(failure)} === 'readback' && this.canvas.classList.contains('brand-mask'))
-            throw new DOMException('Logo sampling unavailable', 'SecurityError');
-          return read.apply(this, args);
-        };
-      })();`,
-    });
-    await active(fallback, 'main');
-    await (await sectionLink(fallback, 'practice')).click();
-    await fallback.waitForTimeout(650);
-    const traveler = fallback.locator('.brand-traveler');
-    assert(await traveler.isVisible(), 'Failed optional logo Canvas preserves the official bitmap traveler');
-    assert(await traveler.evaluate(el => Number(getComputedStyle(el).opacity) > .9));
-    await active(fallback, 'practice'); await go(fallback, 'main'); await geometry(fallback);
-    assert(await fallback.locator('.hero-mark').isVisible());
-    await fallback.context().close();
-  }
-  console.log('PASS: unavailable logo Canvas and rejected image readback keep the bitmap route usable');
+  console.log('PASS: whole-line fades, tiny offsets, stationary three-second reading, pause, locale cancellation, suspension and reduced motion');
 
   for (const id of ids) {
     await go(page, id); await geometry(page);
@@ -499,9 +436,11 @@ try {
   await page.waitForTimeout(170);
   // A user can activate a moving header control; skip Playwright's automatic
   // geometry-stability wait so this actually interrupts the flight.
+  const beforeReverse = await brandFrame(page);
   await page.locator('.wordmark').click({ force: true });
   const afterReverse = await brandFrame(page);
-  assert(afterReverse.transitioning && !afterReverse.hero.visible, 'Interrupted flight keeps a single current destination');
+  assert(afterReverse.transitioning && afterReverse.traveler.visible && !afterReverse.hero.visible, 'Interrupted flight keeps one visible bitmap');
+  assert(Math.abs(afterReverse.traveler.cy - beforeReverse.traveler.cy) < 40, 'The reversed bitmap starts from its current position');
   await active(page, 'main');
   await page.locator('.section-nav a[href="#contact"]').click();
   await page.waitForTimeout(120); await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -832,13 +771,19 @@ try {
   {
     const bilingual = await open({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', reducedMotion: 'reduce' });
     await active(bilingual, 'main');
-    const choose = async (p, language) => {
-      if (!await p.locator('.language-control select').isVisible()) await p.locator('.section-menu-toggle').click();
-      await p.locator('.language-control select').selectOption(language);
-      await p.waitForFunction(language => document.documentElement.lang === language, language);
-    };
     assert.equal(await bilingual.locator('html').getAttribute('lang'), 'en', 'English is default regardless of browser locale');
-    assert.deepEqual(await bilingual.locator('.language-control option').allTextContents(), ['English', 'Español']);
+    assert.equal(await bilingual.locator('#site-language').count(), 1);
+    assert.equal(await bilingual.locator('#site-language').evaluate(el => el.tagName), 'BUTTON');
+    assert.equal(await bilingual.locator('#site-language').getAttribute('type'), 'button');
+    assert.equal(await bilingual.locator('.language-control select, .language-control label').count(), 0, 'The language control has no dropdown or visible label');
+    await chooseLanguage(bilingual, 'en');
+    await bilingual.locator('#site-language').focus(); await bilingual.keyboard.press('Enter');
+    await bilingual.waitForFunction(() => document.documentElement.lang === 'es');
+    assert.equal(await bilingual.locator('#site-language').textContent(), 'SP');
+    await bilingual.keyboard.press('Space');
+    await bilingual.waitForFunction(() => document.documentElement.lang === 'en');
+    assert.equal(await bilingual.locator('#site-language').textContent(), 'EN');
+    assert.equal(await bilingual.locator('main').getAttribute('data-active-section'), 'main', 'Native language-button keys do not navigate sections');
     const english = {};
     const spanish = { practice: 'Qué hace AEKR', orchestration: 'Gravital Orchestration', lifecycle: 'Cómo avanza el trabajo',
       engagements: 'Un proyecto. Distintos niveles de entrega.', why: 'Ingeniería controlada, más rápida', contact: 'Cuéntanos qué necesitas crear' };
@@ -846,7 +791,7 @@ try {
       await go(bilingual, id);
       english[id] = await bilingual.locator(`#${id} h2`).textContent();
     }
-    await choose(bilingual, 'es');
+    await chooseLanguage(bilingual, 'es');
     for (const id of ids.slice(1)) {
       await go(bilingual, id); await geometry(bilingual);
       assert.equal(await bilingual.locator(`#${id} h2`).textContent(), spanish[id], `${id} has the intended Spanish heading or preserved official name`);
@@ -854,16 +799,16 @@ try {
     assert.equal(await bilingual.locator('.header-cta').textContent(), 'Contacto');
     await bilingual.locator('#contact-email').fill('language@example.invalid');
     await bilingual.locator('#contact-comment').fill('Preservar este borrador.');
-    await choose(bilingual, 'en');
+    await chooseLanguage(bilingual, 'en');
     assert.equal(await bilingual.locator('#contact-comment').inputValue(), 'Preservar este borrador.');
     for (const id of ids.slice(1)) {
       await go(bilingual, id);
       assert.equal(await bilingual.locator(`#${id} h2`).textContent(), english[id], 'English round-trip restores original copy');
     }
-    await choose(bilingual, 'es');
+    await chooseLanguage(bilingual, 'es');
     await bilingual.reload(); await active(bilingual, 'contact');
     assert.equal(await bilingual.locator('html').getAttribute('lang'), 'es', 'An explicit selection persists after reload');
-    assert.equal(await bilingual.locator('.language-control select').inputValue(), 'es');
+    assert.equal(await bilingual.locator('#site-language').textContent(), 'SP');
     await bilingual.locator('button[data-request-type="contact"]').click();
     assert((await bilingual.locator('#form-status').textContent()).includes('correo'), 'Validation is in the selected language');
     const endpoint = new URL('api/contact', base).href;
@@ -875,44 +820,46 @@ try {
     await bilingual.locator('button[data-request-type="contact"]').click();
     const pending = await request;
     assert.equal(await bilingual.locator('#form-status').textContent(), 'Enviando…');
-    await choose(bilingual, 'en');
+    await chooseLanguage(bilingual, 'en');
     assert.equal(await bilingual.locator('#form-status').textContent(), 'Sending…');
     assert.equal(await bilingual.locator('#contact-comment').inputValue(), 'Draft during locale switch.');
     assert.equal(await bilingual.locator('#contact-form button:enabled').count(), 0, 'Language changes preserve the in-flight guard');
     await pending.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' });
     await bilingual.waitForFunction(() => document.querySelector('.form-status--error'));
     assert.equal(await bilingual.locator('#form-status').textContent(), "We couldn't send your request. Please try again.");
-    await choose(bilingual, 'es');
+    await chooseLanguage(bilingual, 'es');
     assert.notEqual(await bilingual.locator('#form-status').textContent(), "We couldn't send your request. Please try again.");
     await bilingual.route(endpoint, route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
     await bilingual.locator('button[data-request-type="contact"]').click();
     await bilingual.waitForFunction(() => document.getElementById('contact-form').hidden);
     assert.equal(await bilingual.locator('#contact-thanks h3').textContent(), 'Gracias.');
-    await choose(bilingual, 'en');
+    await chooseLanguage(bilingual, 'en');
     assert(await bilingual.locator('#contact-form').isHidden(), 'Changing language does not reopen a completed form');
     assert.equal(await bilingual.locator('#contact-thanks h3').textContent(), 'Thank you.');
     await bilingual.context().close();
 
     const mobileLanguage = await open({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
-    await choose(mobileLanguage, 'es');
-    await mobileLanguage.locator('.language-control select').focus();
+    await chooseLanguage(mobileLanguage, 'es');
+    await mobileLanguage.locator('#site-language').focus();
     await mobileLanguage.setViewportSize({ width: 1280, height: 900 });
-    assert(await mobileLanguage.locator('.language-control select').isVisible());
+    await mobileLanguage.waitForFunction(() => !document.documentElement.classList.contains('sections-compact'));
+    assert(await mobileLanguage.locator('#site-language').isVisible());
     assert(await mobileLanguage.evaluate(() => document.activeElement.checkVisibility({ checkVisibilityCSS: true })),
-      'Reparenting the focused selector leaves focus on a visible control');
+      'Reparenting the focused language button leaves focus on a visible control');
     await mobileLanguage.setViewportSize({ width: 320, height: 568 });
+    await mobileLanguage.waitForFunction(() => document.documentElement.classList.contains('sections-compact'));
     assert(await mobileLanguage.evaluate(() => document.activeElement.checkVisibility({ checkVisibilityCSS: true })));
     await mobileLanguage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
     for (const id of ids.slice(1)) { await go(mobileLanguage, id); await geometry(mobileLanguage); }
     await mobileLanguage.locator('.section-menu-toggle').click();
-    await mobileLanguage.locator('.language-control select').scrollIntoViewIfNeeded();
-    const target = await mobileLanguage.locator('.language-control select').boundingBox();
+    await mobileLanguage.locator('#site-language').scrollIntoViewIfNeeded();
+    const target = await mobileLanguage.locator('#site-language').boundingBox();
     assert(target.height >= 44 && target.width >= 44, 'Language choice is touch accessible at enlarged text');
     if (shots) await mobileLanguage.screenshot({ path: path.join(shots, 'mobile-spanish-menu-enlarged.png') });
     await mobileLanguage.context().close();
 
     const landscapeLanguage = await open({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
-    await choose(landscapeLanguage, 'es');
+    await chooseLanguage(landscapeLanguage, 'es');
     await landscapeLanguage.locator('.section-menu-toggle').click();
     await active(landscapeLanguage, 'main');
     const landscapeFit = await landscapeLanguage.evaluate(() => {
@@ -926,17 +873,16 @@ try {
     await landscapeLanguage.context().close();
 
     const mediumLanguage = await open({ viewport: { width: 768, height: 900 }, reducedMotion: 'reduce' }, '#practice');
-    await choose(mediumLanguage, 'es');
+    await chooseLanguage(mediumLanguage, 'es');
     await mediumLanguage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
     await mediumLanguage.waitForTimeout(150);
     await geometry(mediumLanguage);
-    const selectorFits = await mediumLanguage.locator('.language-control select').evaluate(el => {
-      const style = getComputedStyle(el), sample = document.createElement('canvas').getContext('2d');
-      sample.font = style.font;
-      const textWidth = sample.measureText(el.selectedOptions[0].textContent).width;
-      return el.getBoundingClientRect().width >= textWidth + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + 16;
+    const languageFits = await mediumLanguage.locator('#site-language').evaluate(el => {
+      const range = document.createRange(); range.selectNodeContents(el);
+      const text = range.getBoundingClientRect(), box = el.getBoundingClientRect();
+      return text.left >= box.left && text.right <= box.right && text.top >= box.top && text.bottom <= box.bottom;
     });
-    assert(selectorFits, 'At the desktop breakpoint, enlarged Spanish selection stays wide enough to read');
+    assert(languageFits, 'The enlarged SP language code fits inside its button at the desktop breakpoint');
     assert(await mediumLanguage.evaluate(() => {
       const boxes = [...document.querySelectorAll('.site-header .wordmark, .site-header .language-control, .header-cta, .brand-dock')]
         .filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => el.getBoundingClientRect());
@@ -951,12 +897,12 @@ try {
       Storage.prototype.getItem = Storage.prototype.setItem = () => { throw new DOMException('Storage blocked', 'SecurityError'); };
     });
     assert.equal(await blockedStorage.locator('html').getAttribute('lang'), 'en');
-    await choose(blockedStorage, 'es'); await go(blockedStorage, 'contact');
+    await chooseLanguage(blockedStorage, 'es'); await go(blockedStorage, 'contact');
     assert.equal(await blockedStorage.locator('.header-cta').textContent(), 'Contacto');
     await blockedStorage.reload();
     assert.equal(await blockedStorage.locator('html').getAttribute('lang'), 'en', 'Blocked storage falls back to English without breaking selection');
     await blockedStorage.context().close();
-    console.log('PASS: English default, complete section switching, preference, accessible mobile selector and localized contact states without lost drafts');
+    console.log('PASS: English default, complete section switching, preference, accessible mobile language button and localized contact states without lost drafts');
   }
 
   for (const unavailable of ['controller', 'web-animations']) {
@@ -964,8 +910,10 @@ try {
       unavailable === 'controller' ? { 'sections.js': '/* Optional navigation controller unavailable. */' } : {},
       unavailable === 'web-animations' ? () => { Element.prototype.animate = undefined; } : undefined);
     assert.equal(await ordinary.locator('html').evaluate(el => el.classList.contains('sections-enabled')), false);
+    assert(await ordinary.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')),
+      'Without the optional motion capability the original introduction remains readable');
     for (const language of ['en', 'es']) {
-      await ordinary.locator('.language-control select').selectOption(language);
+      await chooseLanguage(ordinary, language);
       assert.equal(await ordinary.locator('html').getAttribute('lang'), language);
       assert(await ordinary.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
         'Without the optional section controller, the bilingual document has no horizontal overflow');
