@@ -42,6 +42,12 @@
           "summary": "Coordinates individual section views, accessible navigation, history and bounded gestures."
         },
         {
+          "id": "language-selection",
+          "path": "public/i18n.js",
+          "authority": "implementation",
+          "summary": "Selects English or Spanish copy and coordinates language changes without network translation."
+        },
+        {
           "id": "site-assets",
           "path": "public/assets/",
           "authority": "implementation",

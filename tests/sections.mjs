@@ -92,7 +92,7 @@ async function geometry(page) {
       contentWidth: document.querySelector('.section-panel.is-active').scrollWidth,
       footer: { top: f.top, bottom: f.bottom }, headerBottom: h.bottom,
       scrollbar: getComputedStyle(document.querySelector('.section-panel.is-active')).scrollbarWidth,
-      controls: [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta, .section-nav a, .brand-dock')]
+      controls: [...document.querySelectorAll('.wordmark, .section-menu-toggle, .header-cta, .section-nav a, .brand-dock, .language-control select')]
         .filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => {
         const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       }),
@@ -117,7 +117,16 @@ async function brandFrame(page) {
       return { x: r.x, y: r.y, width: r.width, height: r.height, cx: r.x + r.width / 2,
         cy: r.y + r.height / 2, opacity: Number(s.opacity), visible: el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
     };
-    return { hero: box(document.querySelector('.hero-mark')), traveler: box(document.querySelector('.brand-traveler')),
+    const canvas = document.querySelector('.brand-particles');
+    let pixels = 0, signature = 0;
+    if (canvas && !canvas.hidden) {
+      const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 12) {
+        pixels++; signature = (signature + i * data[i]) % 1000000007;
+      }
+    }
+    return { smoke: { pixels, signature, hidden: !canvas || canvas.hidden,
+      area: canvas ? canvas.width * canvas.height : 0 }, hero: box(document.querySelector('.hero-mark')), traveler: box(document.querySelector('.brand-traveler')),
       dock: box(document.querySelector('.brand-dock')), header: box(document.querySelector('.site-header')),
       docked: document.documentElement.classList.contains('brand-docked'), width: innerWidth,
       transitioning: document.querySelector('main').dataset.transitioning === 'true' };
@@ -129,15 +138,17 @@ async function brandJourney(page, label) {
   const home = await brandFrame(page);
   assert(home.hero.visible && !home.traveler.visible, 'Home presents one original symbol');
   await (await sectionLink(page, 'practice')).click();
-  await page.waitForTimeout(180);
+  await page.waitForTimeout(600);
   const moving = await brandFrame(page);
-  assert(moving.transitioning && moving.traveler.visible && !moving.hero.visible, 'One crisp symbol remains visible in flight');
-  assert(moving.traveler.opacity > .99, 'The traveling symbol does not fade');
-  assert(Math.abs(moving.traveler.cy - home.hero.cy) > 2, 'Symbol actually leaves its hero position');
+  assert(moving.transitioning && !moving.hero.visible, 'The source symbol dissolves during its journey');
+  assert(moving.smoke.pixels > 100 && moving.smoke.area <= 900000, 'A bounded, visible smoke filament carries the official symbol');
+  await page.waitForTimeout(200);
+  assert.notEqual((await brandFrame(page)).smoke.signature, moving.smoke.signature, 'Real logo particles change position');
   if (shots) await page.screenshot({ path: path.join(shots, `${label}-outbound.png`) });
   await active(page, 'practice');
   const docked = await brandFrame(page);
   assert(docked.docked && docked.traveler.visible && !docked.hero.visible);
+  assert(docked.smoke.hidden || docked.smoke.pixels === 0, 'Settled header has no residual particles');
   assert(Math.abs(docked.traveler.cx - docked.width / 2) <= 1, 'Symbol docks at viewport center');
   assert(Math.abs(docked.traveler.cy - docked.dock.cy) <= 1, 'Symbol meets the real header anchor');
   assert(docked.header.height > home.header.height + 8, 'Header grows when leaving home');
@@ -146,10 +157,9 @@ async function brandJourney(page, label) {
   assert(Math.abs(stable.header.height - docked.header.height) <= 1, 'Header remains expanded between content views');
   assert(Math.abs(stable.traveler.cy - docked.traveler.cy) <= 1, 'Docked symbol stays put between sections');
   await page.locator('.brand-dock').click();
-  await page.waitForTimeout(180);
+  await page.waitForTimeout(600);
   const returning = await brandFrame(page);
-  assert(returning.traveler.visible && returning.traveler.opacity > .99, 'Return journey keeps the symbol visible');
-  assert(Math.abs(returning.traveler.cy - stable.traveler.cy) > 2, 'Symbol actually travels back');
+  assert(returning.transitioning && returning.smoke.pixels > 100, 'The reverse route also travels as smoke');
   if (shots) await page.screenshot({ path: path.join(shots, `${label}-return.png`) });
   await active(page, 'main');
   const restored = await brandFrame(page);
@@ -162,7 +172,7 @@ try {
   const page = await open({ viewport: { width: 1440, height: 1000 } });
   await active(page, 'main'); await geometry(page);
   await brandJourney(page, 'desktop-brand');
-  console.log('PASS: continuous official symbol travel, centered dock, stable enlarged header and return');
+  console.log('PASS: official symbol smoke travel, bounded canvas, centered dock, stable header and reverse return');
   if (process.env.BASELINE_REF && !process.env.SITE_URL) {
     const baseline = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/index.html`], { cwd: root, encoding: 'utf8' });
     const current = await readFile(path.join(root, 'public/index.html'), 'utf8');
@@ -170,7 +180,7 @@ try {
       const parse = source => new DOMParser().parseFromString(source, 'text/html');
       const old = parse(baseline), next = parse(current);
       const normalize = el => el.textContent.replace(/\s+/g, ' ').trim();
-      return ['.hero', '#practice', '#orchestration', '#engagements', '#why', '#contact-form', '.site-footer']
+      return ['#practice', '#orchestration', '#engagements', '#why', '#contact-form', '.site-footer']
         .every(selector => old.querySelector(selector).innerHTML === next.querySelector(selector).innerHTML) &&
         normalize(old.querySelector('#lifecycle')) === normalize(next.querySelector('#lifecycle'));
     }, { baseline, current });
@@ -180,11 +190,14 @@ try {
       sources[file] = execFileSync('git', ['show', `${process.env.BASELINE_REF}:public/${file}`], { cwd: root, encoding: 'utf8' });
     }
     const currentScript = await readFile(path.join(root, 'public/script.js'), 'utf8');
-    assert.equal(currentScript, sources['script.js'],
-      'The atmosphere, header and contact script remain byte-identical');
-    const currentSections = await readFile(path.join(root, 'public/sections.js'), 'utf8');
-    assert.equal(currentSections.split('/* Hero storytelling')[1], sources['sections.js'].split('/* Hero storytelling')[1],
-      'The approved particle engine remains byte-identical');
+    const contactBoundary = '   Both buttons post to the same endpoint';
+    assert.equal(currentScript.split(contactBoundary)[0], sources['script.js'].split(contactBoundary)[0],
+      'The atmosphere and its handlers remain byte-identical');
+    assert.equal(await page.locator('.hero-tagline').count(), 0, 'The fixed tagline is removed');
+    assert.equal(await page.locator('.hero-phrase').filter({ hasText: 'Humans orchestrate. Machines execute.' }).count(), 1,
+      'The former tagline appears once in the phrase loop');
+    assert((await page.locator('.hero-lede').textContent()).includes('Humans orchestrate. Machines execute.'),
+      'Accessible static prose retains the moved message');
     const oldPage = await open({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' }, '', sources);
     const identitySizes = p => p.evaluate(() => ({
       symbol: document.querySelector('.hero-mark').getBoundingClientRect().width,
@@ -207,9 +220,8 @@ try {
     const oldLifecycle = await lifecycleSize(oldPage), newLifecycle = await lifecycleSize(page);
     assert(newLifecycle.aside && newLifecycle.fits && newLifecycle.centerOffset < 1, 'Interferometry is centered beside the stages');
     assert.deepEqual(newLifecycle, oldLifecycle, 'Desktop Interferometry retains its approved geometry');
-    const gaps = p => p.evaluate(() => ['.hero-story', '.hero-tagline'].map(selector => parseFloat(getComputedStyle(document.querySelector(selector)).marginTop)));
-    const oldGaps = await gaps(oldPage), newGaps = await gaps(page);
-    assert.deepEqual(newGaps, oldGaps, 'Desktop hero spacing is unchanged');
+    const upperGap = p => p.locator('.hero-story').evaluate(el => parseFloat(getComputedStyle(el).marginTop));
+    assert(await upperGap(page) > await upperGap(oldPage), 'The hero gains breathing room above the phrase');
     assert.equal((await page.locator('.contact-home').textContent()).trim(), 'Back');
     const desktopLayout = p => p.evaluate(() => {
       const elements = document.querySelectorAll('.site-header, .site-footer, .section-nav, .section-panel.is-active h2, .section-panel.is-active h3, .section-panel.is-active p, .section-panel.is-active li, .section-panel.is-active input, .section-panel.is-active textarea');
@@ -226,7 +238,7 @@ try {
       before[0].text = after[0].text = '';
       assert.deepEqual(after, before, `Desktop ${id} keeps its layout and typography`);
     }
-    console.log('PASS: desktop appearance, approved identity, particle/atmosphere/contact boundaries and Back preserved');
+    console.log('PASS: desktop appearance, approved identity, unchanged atmosphere/contact boundaries and Back preserved');
     await oldPage.context().close();
   }
   const heroPage = await open({ viewport: { width: 1440, height: 1000 } }, '', {}, () => {
@@ -333,6 +345,36 @@ try {
   await heroPage.context().close();
   console.log('PASS: real glyph particle motion, stationary three-second reading, loop, pause, suspension, resize and reduced motion');
 
+  for (const seed of [41, 311, 1024]) {
+    const protectedPause = await open({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 }, '', {}, {
+      content: `(() => {
+        let state = ${seed};
+        Math.random = () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; };
+        localStorage.setItem('aekr-language', 'es');
+      })();`,
+    });
+    for (let sample = 0; sample < 20; sample++) {
+      await protectedPause.waitForTimeout(45);
+      const hits = await protectedPause.evaluate(() => {
+        const canvas = document.querySelector('.hero-particles'), box = canvas.getBoundingClientRect();
+        const pause = document.querySelector('.hero-pause').getBoundingClientRect();
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let count = 0;
+        for (let i = 3; i < pixels.length; i += 4) {
+          if (pixels[i] <= 8) continue;
+          const pixel = (i - 3) / 4;
+          const x = box.left + (pixel % canvas.width + .5) / canvas.width * box.width;
+          const y = box.top + (Math.floor(pixel / canvas.width) + .5) / canvas.height * box.height;
+          if (x >= pause.left && x <= pause.right && y >= pause.top && y <= pause.bottom) count++;
+        }
+        return count;
+      });
+      assert.equal(hits, 0, `Organic cloud seed ${seed} leaves Pause visually clear`);
+    }
+    await protectedPause.context().close();
+  }
+  console.log('PASS: varied cloud seeds never paint over the lateral Pause control');
+
   for (const fault of ['context', 'readback', 'blank', 'opaque']) {
     const failing = await open({ viewport: { width: 1440, height: 1000 } }, '', {},
       // Each failure is injected only at the optional hero Canvas boundary.
@@ -342,7 +384,7 @@ try {
         const masks = new WeakSet();
         HTMLCanvasElement.prototype.getContext = function(type, options) {
           if (${JSON.stringify(fault)} === 'context' && this.classList.contains('hero-particles')) return null;
-          if (options?.willReadFrequently) masks.add(this);
+          if (this.classList.contains('hero-particle-mask')) masks.add(this);
           return get.call(this, type, options);
         };
         CanvasRenderingContext2D.prototype.getImageData = function(...args) {
@@ -362,6 +404,34 @@ try {
   }
   console.log('PASS: unavailable Canvas, rejected readback and corrupt masks retain accessible static prose');
 
+  for (const failure of ['context', 'readback']) {
+    const fallback = await open({ viewport: { width: 1280, height: 900 } }, '', {}, {
+      content: `(() => {
+        const get = HTMLCanvasElement.prototype.getContext;
+        const read = CanvasRenderingContext2D.prototype.getImageData;
+        HTMLCanvasElement.prototype.getContext = function(type, options) {
+          if (${JSON.stringify(failure)} === 'context' && this.classList.contains('brand-particles')) return null;
+          return get.call(this, type, options);
+        };
+        CanvasRenderingContext2D.prototype.getImageData = function(...args) {
+          if (${JSON.stringify(failure)} === 'readback' && this.canvas.classList.contains('brand-mask'))
+            throw new DOMException('Logo sampling unavailable', 'SecurityError');
+          return read.apply(this, args);
+        };
+      })();`,
+    });
+    await active(fallback, 'main');
+    await (await sectionLink(fallback, 'practice')).click();
+    await fallback.waitForTimeout(650);
+    const traveler = fallback.locator('.brand-traveler');
+    assert(await traveler.isVisible(), 'Failed optional logo Canvas preserves the official bitmap traveler');
+    assert(await traveler.evaluate(el => Number(getComputedStyle(el).opacity) > .9));
+    await active(fallback, 'practice'); await go(fallback, 'main'); await geometry(fallback);
+    assert(await fallback.locator('.hero-mark').isVisible());
+    await fallback.context().close();
+  }
+  console.log('PASS: unavailable logo Canvas and rejected image readback keep the bitmap route usable');
+
   for (const id of ids) {
     await go(page, id); await geometry(page);
     if (shots) await page.screenshot({ path: path.join(shots, `desktop-${id}.png`) });
@@ -372,12 +442,14 @@ try {
   const early = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
   const mistStart = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
   assert(early < 0.1, 'Incoming text waits while the outgoing view dissolves');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(600);
   const fade = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
   const mistPeak = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
   assert(mistPeak.opacity > 0.1 && mistPeak.opacity > mistStart.opacity && mistPeak.transform !== mistStart.transform,
     'Nebular mist moves and rises during the transition');
   assert(fade > 0 && fade < 1, 'Navigation actually fades the incoming view');
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator('main').getAttribute('data-transitioning'), 'true', 'The gentle transition remains active beyond 1.2 seconds');
   await active(page, 'orchestration');
   assert.equal(await page.locator('.atmosphere__transition').evaluate(el => Number(getComputedStyle(el).opacity)), 0,
     'The temporary mist clears after the transition');
@@ -425,12 +497,11 @@ try {
   await go(page, 'main');
   await (await sectionLink(page, 'practice')).click();
   await page.waitForTimeout(170);
-  const beforeReverse = await brandFrame(page);
   // A user can activate a moving header control; skip Playwright's automatic
   // geometry-stability wait so this actually interrupts the flight.
   await page.locator('.wordmark').click({ force: true });
   const afterReverse = await brandFrame(page);
-  assert(Math.abs(afterReverse.traveler.cy - beforeReverse.traveler.cy) < 40, 'Interrupted flight retargets without a position reset');
+  assert(afterReverse.transitioning && !afterReverse.hero.visible, 'Interrupted flight keeps a single current destination');
   await active(page, 'main');
   await page.locator('.section-nav a[href="#contact"]').click();
   await page.waitForTimeout(120); await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -757,6 +828,154 @@ try {
     await contactLarge.context().close();
     console.log('PASS: exact success acknowledgment, request payloads, duplicate guards, visit resets, direct return and stale-response isolation');
   }
+
+  {
+    const bilingual = await open({ viewport: { width: 1440, height: 1000 }, locale: 'es-ES', reducedMotion: 'reduce' });
+    await active(bilingual, 'main');
+    const choose = async (p, language) => {
+      if (!await p.locator('.language-control select').isVisible()) await p.locator('.section-menu-toggle').click();
+      await p.locator('.language-control select').selectOption(language);
+      await p.waitForFunction(language => document.documentElement.lang === language, language);
+    };
+    assert.equal(await bilingual.locator('html').getAttribute('lang'), 'en', 'English is default regardless of browser locale');
+    assert.deepEqual(await bilingual.locator('.language-control option').allTextContents(), ['English', 'Español']);
+    const english = {};
+    const spanish = { practice: 'Qué hace AEKR', orchestration: 'Gravital Orchestration', lifecycle: 'Cómo avanza el trabajo',
+      engagements: 'Un proyecto. Distintos niveles de entrega.', why: 'Ingeniería controlada, más rápida', contact: 'Cuéntanos qué necesitas crear' };
+    for (const id of ids.slice(1)) {
+      await go(bilingual, id);
+      english[id] = await bilingual.locator(`#${id} h2`).textContent();
+    }
+    await choose(bilingual, 'es');
+    for (const id of ids.slice(1)) {
+      await go(bilingual, id); await geometry(bilingual);
+      assert.equal(await bilingual.locator(`#${id} h2`).textContent(), spanish[id], `${id} has the intended Spanish heading or preserved official name`);
+    }
+    assert.equal(await bilingual.locator('.header-cta').textContent(), 'Contacto');
+    await bilingual.locator('#contact-email').fill('language@example.invalid');
+    await bilingual.locator('#contact-comment').fill('Preservar este borrador.');
+    await choose(bilingual, 'en');
+    assert.equal(await bilingual.locator('#contact-comment').inputValue(), 'Preservar este borrador.');
+    for (const id of ids.slice(1)) {
+      await go(bilingual, id);
+      assert.equal(await bilingual.locator(`#${id} h2`).textContent(), english[id], 'English round-trip restores original copy');
+    }
+    await choose(bilingual, 'es');
+    await bilingual.reload(); await active(bilingual, 'contact');
+    assert.equal(await bilingual.locator('html').getAttribute('lang'), 'es', 'An explicit selection persists after reload');
+    assert.equal(await bilingual.locator('.language-control select').inputValue(), 'es');
+    await bilingual.locator('button[data-request-type="contact"]').click();
+    assert((await bilingual.locator('#form-status').textContent()).includes('correo'), 'Validation is in the selected language');
+    const endpoint = new URL('api/contact', base).href;
+    let resolveRequest;
+    const request = new Promise(resolve => { resolveRequest = resolve; });
+    await bilingual.route(endpoint, route => resolveRequest(route));
+    await bilingual.locator('#contact-email').fill('locale@example.invalid');
+    await bilingual.locator('#contact-comment').fill('Draft during locale switch.');
+    await bilingual.locator('button[data-request-type="contact"]').click();
+    const pending = await request;
+    assert.equal(await bilingual.locator('#form-status').textContent(), 'Enviando…');
+    await choose(bilingual, 'en');
+    assert.equal(await bilingual.locator('#form-status').textContent(), 'Sending…');
+    assert.equal(await bilingual.locator('#contact-comment').inputValue(), 'Draft during locale switch.');
+    assert.equal(await bilingual.locator('#contact-form button:enabled').count(), 0, 'Language changes preserve the in-flight guard');
+    await pending.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' });
+    await bilingual.waitForFunction(() => document.querySelector('.form-status--error'));
+    assert.equal(await bilingual.locator('#form-status').textContent(), "We couldn't send your request. Please try again.");
+    await choose(bilingual, 'es');
+    assert.notEqual(await bilingual.locator('#form-status').textContent(), "We couldn't send your request. Please try again.");
+    await bilingual.route(endpoint, route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+    await bilingual.locator('button[data-request-type="contact"]').click();
+    await bilingual.waitForFunction(() => document.getElementById('contact-form').hidden);
+    assert.equal(await bilingual.locator('#contact-thanks h3').textContent(), 'Gracias.');
+    await choose(bilingual, 'en');
+    assert(await bilingual.locator('#contact-form').isHidden(), 'Changing language does not reopen a completed form');
+    assert.equal(await bilingual.locator('#contact-thanks h3').textContent(), 'Thank you.');
+    await bilingual.context().close();
+
+    const mobileLanguage = await open({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+    await choose(mobileLanguage, 'es');
+    await mobileLanguage.locator('.language-control select').focus();
+    await mobileLanguage.setViewportSize({ width: 1280, height: 900 });
+    assert(await mobileLanguage.locator('.language-control select').isVisible());
+    assert(await mobileLanguage.evaluate(() => document.activeElement.checkVisibility({ checkVisibilityCSS: true })),
+      'Reparenting the focused selector leaves focus on a visible control');
+    await mobileLanguage.setViewportSize({ width: 320, height: 568 });
+    assert(await mobileLanguage.evaluate(() => document.activeElement.checkVisibility({ checkVisibilityCSS: true })));
+    await mobileLanguage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    for (const id of ids.slice(1)) { await go(mobileLanguage, id); await geometry(mobileLanguage); }
+    await mobileLanguage.locator('.section-menu-toggle').click();
+    await mobileLanguage.locator('.language-control select').scrollIntoViewIfNeeded();
+    const target = await mobileLanguage.locator('.language-control select').boundingBox();
+    assert(target.height >= 44 && target.width >= 44, 'Language choice is touch accessible at enlarged text');
+    if (shots) await mobileLanguage.screenshot({ path: path.join(shots, 'mobile-spanish-menu-enlarged.png') });
+    await mobileLanguage.context().close();
+
+    const landscapeLanguage = await open({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+    await choose(landscapeLanguage, 'es');
+    await landscapeLanguage.locator('.section-menu-toggle').click();
+    await active(landscapeLanguage, 'main');
+    const landscapeFit = await landscapeLanguage.evaluate(() => {
+      const panel = document.querySelector('.hero').getBoundingClientRect();
+      return [...document.querySelectorAll('.hero .eyebrow, .hero .btn-primary, .hero-story')].every(el => {
+        const box = el.getBoundingClientRect(); return box.top >= panel.top && box.bottom <= panel.bottom;
+      });
+    });
+    assert(landscapeFit, 'Spanish landscape keeps the full legend, phrase and primary CTA above the fixed footer');
+    if (shots) await landscapeLanguage.screenshot({ path: path.join(shots, 'landscape-spanish-home.png') });
+    await landscapeLanguage.context().close();
+
+    const mediumLanguage = await open({ viewport: { width: 768, height: 900 }, reducedMotion: 'reduce' }, '#practice');
+    await choose(mediumLanguage, 'es');
+    await mediumLanguage.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    await mediumLanguage.waitForTimeout(150);
+    await geometry(mediumLanguage);
+    const selectorFits = await mediumLanguage.locator('.language-control select').evaluate(el => {
+      const style = getComputedStyle(el), sample = document.createElement('canvas').getContext('2d');
+      sample.font = style.font;
+      const textWidth = sample.measureText(el.selectedOptions[0].textContent).width;
+      return el.getBoundingClientRect().width >= textWidth + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + 16;
+    });
+    assert(selectorFits, 'At the desktop breakpoint, enlarged Spanish selection stays wide enough to read');
+    assert(await mediumLanguage.evaluate(() => {
+      const boxes = [...document.querySelectorAll('.site-header .wordmark, .site-header .language-control, .header-cta, .brand-dock')]
+        .filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => el.getBoundingClientRect());
+      return boxes.every((box, i) => boxes.slice(i + 1).every(other =>
+        Math.min(box.right, other.right) <= Math.max(box.left, other.left) + 1 ||
+        Math.min(box.bottom, other.bottom) <= Math.max(box.top, other.top) + 1));
+    }), 'Enlarged header controls do not overlap each other or the centered symbol');
+    if (shots) await mediumLanguage.screenshot({ path: path.join(shots, 'desktop-breakpoint-spanish-enlarged.png') });
+    await mediumLanguage.context().close();
+
+    const blockedStorage = await open({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' }, '', {}, () => {
+      Storage.prototype.getItem = Storage.prototype.setItem = () => { throw new DOMException('Storage blocked', 'SecurityError'); };
+    });
+    assert.equal(await blockedStorage.locator('html').getAttribute('lang'), 'en');
+    await choose(blockedStorage, 'es'); await go(blockedStorage, 'contact');
+    assert.equal(await blockedStorage.locator('.header-cta').textContent(), 'Contacto');
+    await blockedStorage.reload();
+    assert.equal(await blockedStorage.locator('html').getAttribute('lang'), 'en', 'Blocked storage falls back to English without breaking selection');
+    await blockedStorage.context().close();
+    console.log('PASS: English default, complete section switching, preference, accessible mobile selector and localized contact states without lost drafts');
+  }
+
+  for (const unavailable of ['controller', 'web-animations']) {
+    const ordinary = await open({ viewport: { width: 320, height: 568 } }, '',
+      unavailable === 'controller' ? { 'sections.js': '/* Optional navigation controller unavailable. */' } : {},
+      unavailable === 'web-animations' ? () => { Element.prototype.animate = undefined; } : undefined);
+    assert.equal(await ordinary.locator('html').evaluate(el => el.classList.contains('sections-enabled')), false);
+    for (const language of ['en', 'es']) {
+      await ordinary.locator('.language-control select').selectOption(language);
+      assert.equal(await ordinary.locator('html').getAttribute('lang'), language);
+      assert(await ordinary.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+        'Without the optional section controller, the bilingual document has no horizontal overflow');
+      const contact = await ordinary.locator('.header-cta').boundingBox();
+      assert(contact.x >= 0 && contact.x + contact.width <= 321, 'Fallback Contact remains inside the viewport');
+      assert(await ordinary.locator('#practice').isVisible(), 'The original document remains readable');
+    }
+    await ordinary.context().close();
+  }
+  console.log('PASS: bilingual normal-page fallback fits when navigation or its animation capability is unavailable');
 
   const reduced = await open({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' }, '#why');
   await active(reduced, 'why');

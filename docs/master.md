@@ -1,9 +1,140 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; mobile experience refinement with desktop preservation.
+**Status:** Existing public website; organic motion and selectable English/Spanish refinement.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Organic motion and language selection — 2026-09-05
+
+Ed requested a wider, subtler and varying particle cloud; moving the fixed
+“Humans orchestrate. Machines execute.” line into that loop; more breathing
+room; slower, elegant section transitions including Back; and a smoke-particle
+journey of the official symbol between hero and header. He also restored the
+English/Spanish selector with English as the default. Standing full Git,
+kommiBo review by edfortheblind, merge and production delivery authorization
+applies to this bounded increment. Base `75865df` is the approved PR #11 release.
+A verified, restored Git bundle and the new pre-organic-motion recovery tag
+preserve it; the exact PR #4 recovery tag remains intact.
+
+Before implementation: the current cloud samples uniform rectangular start
+positions, clamps dispersed targets to a rectangle and uses the same sinusoidal
+bend. These mechanics explain the repeated box-like shape. Section exits last
+240 ms within a 900 ms journey; the symbol is one translated bitmap. Existing
+Canvas text sampling, requestAnimationFrame cancellation, WAAPI section state,
+image assets, native scrolling, reduced-motion fallback and disclosure control
+are reusable. A separate design pass selected 2–4 correlated, rotated cloud
+lobes per cycle, smooth boundary fading and a larger responsive halo. Formation
+lasts 1400 ms, static DOM reading remains 3000 ms and dispersion lasts 1300 ms.
+The released tagline space supports larger gaps without shrinking brand artwork.
+All section routes use a 1500 ms envelope with a 460 ms exit and delayed, gentle
+arrival; a small settling displacement provides restrained elasticity.
+
+The official transparent symbol can be sampled locally once: up to 900 colored
+points disassemble, follow a curved smoke filament and reassemble into the exact
+bitmap at the destination. Only hero/header journeys use this effect. Existing
+navigation cancellation and destination state remain authoritative. The canvas
+runs only during a journey at 30 fps, DPR at most 2 and at most 0.9 million pixels;
+image/context/capacity failures retain the existing bitmap traveler. Resize,
+hidden-page and reduced-motion changes settle immediately without orphan work.
+
+Search/reuse ladder: exclude changes to content sections, contact delivery,
+nebula rendering, brand assets and infrastructure. Extend the existing native
+Canvas/WAAPI controller rather than add an animation library or router. Static
+English copy stays in HTML; one small local translation boundary selects Spanish
+text and accessible labels without network requests or HTML injection. English
+is the default when no explicit preference exists; storage failure remains
+usable. A native English/Español selector appears in the desktop header and in
+the compact Menu disclosure. One language-change event lets existing controllers
+refresh measurements, particle masks and dynamic announcements. The contact
+handler only translates user-visible status text; delivery semantics and its
+background renderer are preserved. No dependency or backend change is needed.
+
+Expected change surface: existing HTML/CSS/section controller, minimal contact
+status integration, one translation script, browser tests and project guide/map.
+The new script owns locale selection and copy, avoiding translation logic spread
+through renderers. Bounded verification covers organic motion frames, static
+reading, interruption/fallbacks, header travel, both languages and persistence,
+contact mock responses, mobile geometry, 200% text and reduced motion. A separate
+technical reviewer checks the immutable diff and output manifest before the
+existing one-PR kommiBo route. Visual review uses Brave emulation because the
+in-app Browser currently exposes no available browser session.
+
+Implementation result: the seven-phrase loop includes the former fixed tagline
+as its second phrase. The fixed block and its obsolete CSS are removed; accessible
+static prose retains the message. Native glyph sampling now uses 2–4 oblique
+cloud lobes, varied trajectories, small round particles and a responsive halo.
+Spatial alpha falls to zero before neighboring copy/controls and viewport edges;
+coordinates are not clamped into a box. Desktop story/CTA gaps are 40 px; compact
+gaps are 32/28 px. Formation, reading and dispersion are 1400/3000/1300 ms.
+
+The same navigation controller owns the 1500 ms transitions and bounded symbol
+journeys. It samples the official bitmap once and reuses the small mask as a
+radial-sprite atlas. The 300/800/400 ms dissolve/travel/reform sequence returns to
+the exact original bitmap. Compact journeys use at most 600 points, desktop at
+most 900; the two backing stores share a 900,000-pixel ceiling. The center of
+the smoke uses lower alpha to avoid a confetti appearance. Reversal reuses the
+current particle positions; navigation to another content view keeps the same
+dock journey. Settlement releases the journey backing store and cancels its RAF.
+Image/context/readback/budget failure uses the original bitmap travel route.
+
+One native English/Español selector has a translated label and moves between the
+header and compact disclosure. Original English text/attributes are retained,
+so repeated switching never translates already-translated text or replaces
+markup. Official AEKR names stay unchanged. The single browser preference key
+`aekr-language` stores only an explicit selection; English remains the fresh-entry
+and unavailable-storage default. The small `window.AEKRLanguage.text` boundary
+and one post-translation event keep copy out of animation and request logic.
+Contact status retains its original message for retranslation; request payloads,
+visits, duplicate guards and draft ownership are unchanged. The atmosphere and
+its interaction code are byte-identical to the base.
+
+Visual review found four bounded issues during this increment: particles over
+neighboring text/buttons, overly dense symbol dust, a clipped Spanish legend in
+short landscape, and a collapsed language select at the 768 px breakpoint with
+200% text. The first two are resolved through the existing alpha/sprite boundary.
+The landscape story spans two existing grid rows, leaving all four identity rows
+and CTA visible. The header can wrap and preserves the native selector's intrinsic
+width. These changes keep the approved artwork and typography sizes intact.
+A seeded follow-up found particles over the lateral Pause control in some cloud
+shapes; a distance-based alpha exclusion now keeps that control clear without
+changing the trajectories. Moving the existing header wrap rule to its base
+selector also preserves the ordinary bilingual page when the section script or
+its animation capability is unavailable. Both cases have reproducible browser regressions.
+
+Runtime inventory: HTML +2/-2, CSS +60/-31, section script +321/-45, contact script
++9/-1 and one new 207-line translation script. The three Project Map projections
+add that real component; browser tests and this guide document its contracts.
+Named section-controller functions increase from 21 to 28: five own the bounded
+symbol lifecycle, one relocates the existing selector and one centralizes translated
+announcements. The contact controller adds one status translation function; the
+translation boundary has two named functions. These are descriptive structure
+counts, not a cyclomatic or cognitive complexity score. New branches serve the
+requested motion, cancellation, capacity/failure handling and explicit locale
+selection; no general animation framework, duplicate router or background loop
+is added. Existing state, fallback, native layout/scrolling and contact behavior
+are reused. No dependency, server API, worker, artwork or hosting setting changes.
+The new preference/event are the only added client coordination surface.
+
+Verification covers actual glyph/symbol pixels, three-second static reading,
+all section routes, history and fresh gestures, cancellation with at most one
+symbol RAF, locale changes during every phrase phase, blocked storage, contact
+success/failure/races, responsive header reparenting, 200% text and ordinary-page
+fallbacks. Seeded tests retain the lateral-Pause regression. The header fallback
+capability test disables Web Animations only; removing ResizeObserver globally
+also breaks the unchanged background and is not a compatibility claim here.
+The atmosphere boundary is compared byte-for-byte with the base.
+
+Separate technical and UI/UX reviewers verified the resolved findings and final
+runtime hashes. Their contexts are shared with the orchestration; this is separate
+authorship, not an independent-context Audit or human acceptance. Evidence uses
+actual Brave with desktop/mobile emulation, not physical iOS, Safari or a native
+soft keyboard. No real contact email was sent. Final repository/browser runs and
+changed-output hashes must be bound to the immutable technical review before the
+one-PR kommiBo approval and authorized delivery. External recovery artifacts hold
+logs, screenshots, source manifests and the separate review/provider readbacks.
+No unresolved minimality finding, new dependency or production configuration
+change remains in this increment.
 
 ## Mobile experience refinement — 2026-09-05
 
