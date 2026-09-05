@@ -381,13 +381,13 @@ main {
 }
 
 .hero-mark {
-  width: clamp(104px, 20vw, 168px);
+  width: clamp(119.6px, 23vw, 193.2px);
   height: auto;
   margin-bottom: var(--space-3);
 }
 
 .hero-title {
-  width: clamp(13rem, 54vw, 21rem);
+  width: clamp(14.95rem, 62.1vw, 24.15rem);
   max-width: 100%;
   margin: 0;
 }
@@ -395,13 +395,13 @@ main {
 .hero-expansion {
   margin: var(--space-1) 0 0;
   color: var(--fg-muted);
-  font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+  font-size: clamp(1.0925rem, 2.76vw, 1.265rem);
   letter-spacing: 0.02em;
 }
 
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.805rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent-dim);
@@ -422,6 +422,94 @@ main {
   color: var(--fg);
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+/* Every phrase occupies the same grid cell, reserving the tallest wrapped line.
+   The original prose stays available to assistive technology and without JS. */
+.hero-story {
+  position: relative;
+  width: 100%;
+  max-width: 58ch;
+  margin-top: 1.25rem;
+  padding-inline: 34px;
+  color: var(--fg-muted);
+  font-size: clamp(1.05rem, 2vw, 1.22rem);
+  line-height: 1.6;
+}
+
+.hero-story[hidden],
+.contact-thanks[hidden],
+.contact-form[hidden] {
+  display: none;
+}
+
+.hero-phrases {
+  display: grid;
+  align-items: center;
+}
+
+.hero-phrase {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  text-wrap: balance;
+}
+
+.hero-phrase.is-current {
+  visibility: visible;
+}
+
+.hero-motes {
+  position: absolute;
+  inset: -12px 5%;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 6% 65%, #4dd6c0aa 0 1px, transparent 3px),
+    radial-gradient(circle at 16% 32%, #eef1f577 0 1px, transparent 2px),
+    radial-gradient(circle at 24% 70%, #4dd6c099 0 1px, transparent 3px),
+    radial-gradient(circle at 37% 25%, #6f8faeaa 0 1px, transparent 3px),
+    radial-gradient(circle at 45% 56%, #eef1f588 0 1px, transparent 2px),
+    radial-gradient(circle at 58% 38%, #4dd6c099 0 1px, transparent 3px),
+    radial-gradient(circle at 69% 68%, #6f8faeaa 0 1px, transparent 3px),
+    radial-gradient(circle at 78% 24%, #eef1f588 0 1px, transparent 2px),
+    radial-gradient(circle at 91% 55%, #4dd6c0aa 0 1px, transparent 3px);
+}
+
+.hero-pause {
+  position: absolute;
+  right: -10px;
+  top: calc(50% - 22px);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fg-faint);
+  cursor: pointer;
+}
+
+.hero-pause:hover,
+.hero-pause:focus-visible {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.hero-pause::before {
+  content: "";
+  width: 7px;
+  height: 9px;
+  border-inline: 2px solid currentColor;
+}
+
+.hero-pause[aria-pressed="true"]::before {
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-right: 0;
+  border-left: 7px solid currentColor;
 }
 
 /* ==========================================================================
@@ -675,6 +763,43 @@ main {
   vertical-align: 0.05em;
 }
 
+.lifecycle-layout {
+  position: relative;
+  container-type: inline-size;
+}
+
+/* A sufficiently wide reading column puts verification beside all seven gates.
+   Font-relative sizing also restores the vertical layout for enlarged text. */
+@container (min-width: 48rem) {
+  .sections-enabled .lifecycle-layout > .lifecycle {
+    width: calc(100% - 15rem);
+    margin-top: 0;
+  }
+
+  .sections-enabled .lifecycle-layout .phase:not(:last-child) {
+    padding-bottom: 0.75rem;
+  }
+
+  .sections-enabled .lifecycle-layout > .lifecycle-layer {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 13rem;
+    margin: 0;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+    line-height: 1.8;
+    background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+  }
+
+  .sections-enabled .lifecycle-layer .layer-tag {
+    align-self: flex-start;
+    margin: 0;
+  }
+}
+
 /* ==========================================================================
    Marks list
    ========================================================================== */
@@ -831,6 +956,54 @@ main {
 
 .form-status--error {
   color: #e0736a;
+}
+
+.contact-thanks {
+  margin-top: 2rem;
+  padding: 2rem 0;
+  max-width: 34rem;
+  animation: contact-arrive 700ms var(--ease-standard) both;
+}
+
+.contact-thanks h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.contact-thanks p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.contact-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  margin: 2rem auto 0;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.contact-home svg {
+  flex-shrink: 0;
+}
+
+.contact-home:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+@keyframes contact-arrive {
+  from { opacity: 0; filter: blur(4px); transform: translateY(8px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
 }
 
 /* ==========================================================================
@@ -1126,7 +1299,7 @@ main {
 }
 
 .sections-enabled .hero-mark {
-  width: clamp(90px, 15vh, 138px);
+  width: clamp(103.5px, 17.25vh, 158.7px);
   margin-bottom: 1.25rem;
 }
 
@@ -1149,6 +1322,10 @@ main {
 .sections-enabled .lifecycle,
 .sections-enabled .contact-form,
 .sections-enabled .cta-inline {
+  margin-top: 1.75rem;
+}
+
+.sections-enabled .lifecycle-layout {
   margin-top: 1.75rem;
 }
 

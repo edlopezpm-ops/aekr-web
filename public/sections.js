@@ -313,3 +313,107 @@
   }, { passive: true });
   document.addEventListener('touchcancel', () => { touch = null; }, { passive: true });
 })();
+
+/* Hero storytelling shares the selected-view state; it never drives navigation.
+   Native animations stop outside the visible hero, and the original prose is
+   the stable reading/fallback equivalent instead of a repeating live region. */
+(() => {
+  'use strict';
+  const main = document.querySelector('main');
+  const lede = document.querySelector('.hero .hero-lede');
+  if (!lede || !Element.prototype.animate || !window.IntersectionObserver) return;
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const phrases = [
+    'An AI-native, human-orchestrated engineering practice.',
+    'From ambiguous ideas to clear engineering direction.',
+    'Engineering outcomes you can inspect, verify, and own.',
+    'Architecture with intent. Delivery with control.',
+    'Human-led decisions. Evidence at every step.',
+    'Software you can understand, transfer, and own.',
+  ];
+  const story = document.createElement('div');
+  story.className = 'hero-story';
+  const lines = document.createElement('div');
+  lines.className = 'hero-phrases';
+  lines.setAttribute('aria-hidden', 'true');
+  const spans = phrases.map(phrase => {
+    const span = document.createElement('span');
+    span.className = 'hero-phrase';
+    span.textContent = phrase;
+    lines.append(span);
+    return span;
+  });
+  const motes = document.createElement('span');
+  motes.className = 'hero-motes';
+  motes.setAttribute('aria-hidden', 'true');
+  const pause = document.createElement('button');
+  pause.type = 'button';
+  pause.className = 'hero-pause';
+  pause.setAttribute('aria-label', 'Pause rotating introduction');
+  pause.setAttribute('aria-pressed', 'false');
+  story.append(lines, motes, pause);
+  lede.after(story);
+
+  let index = 0, userPaused = false, inView = false;
+  let animations = [];
+  const canRun = () => !motion.matches && !userPaused && !document.hidden && inView &&
+    (!main.dataset.activeSection || main.dataset.activeSection === 'main');
+
+  function clearAnimations() {
+    animations.forEach(animation => { animation.onfinish = null; animation.cancel(); });
+    animations = [];
+  }
+
+  function cycle() {
+    clearAnimations();
+    spans.forEach((span, i) => span.classList.toggle('is-current', i === index));
+    const text = spans[index].animate([
+      { offset: 0, opacity: 0, filter: 'blur(7px)', transform: 'translateY(10px) scale(.985)' },
+      { offset: .14, opacity: 1, filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
+      { offset: .83, opacity: 1, filter: 'blur(0)', transform: 'translateY(-2px) scale(1)' },
+      { offset: 1, opacity: 0, filter: 'blur(7px)', transform: 'translateY(-12px) scale(1.02)' },
+    ], { duration: 6000, fill: 'both', easing: 'linear' });
+    const dust = motes.animate([
+      { offset: 0, opacity: .6, filter: 'blur(1px)', transform: 'translateY(10px) scale(.94)' },
+      { offset: .16, opacity: 0, filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
+      { offset: .80, opacity: 0, filter: 'blur(0)', transform: 'translateY(-2px) scale(1)' },
+      { offset: 1, opacity: .6, filter: 'blur(1px)', transform: 'translateY(-12px) scale(1.08)' },
+    ], { duration: 6000, fill: 'both', easing: 'linear' });
+    animations = [text, dust];
+    text.onfinish = () => {
+      index = (index + 1) % spans.length;
+      clearAnimations();
+      if (canRun()) cycle();
+    };
+  }
+
+  function sync() {
+    story.hidden = motion.matches;
+    lede.classList.toggle('visually-hidden', !motion.matches);
+    if (motion.matches) {
+      if (story.contains(document.activeElement)) main.querySelector('.hero').focus({ preventScroll: true });
+      clearAnimations();
+      return;
+    }
+    if (canRun()) {
+      if (!animations.length) cycle();
+      else animations.forEach(animation => animation.play());
+    } else {
+      animations.forEach(animation => animation.pause());
+      // A deliberate pause leaves the current phrase crisp and readable.
+      if (userPaused) animations.forEach(animation => { animation.currentTime = 2400; });
+    }
+  }
+  pause.addEventListener('click', () => {
+    userPaused = !userPaused;
+    pause.setAttribute('aria-pressed', String(userPaused));
+    pause.setAttribute('aria-label', userPaused ? 'Resume rotating introduction' : 'Pause rotating introduction');
+    sync();
+  });
+  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }).observe(story);
+  new MutationObserver(sync).observe(main, { attributes: true, attributeFilter: ['data-active-section'] });
+  document.addEventListener('visibilitychange', sync);
+  motion.addEventListener('change', sync);
+  spans[0].classList.add('is-current');
+  sync();
+})();

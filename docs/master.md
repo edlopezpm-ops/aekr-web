@@ -1,9 +1,69 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; section navigation and official-symbol motion refinement.
+**Status:** Existing public website; hero storytelling, contact completion and lifecycle refinement.
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Hero, contact and lifecycle refinement — 2026-09-05
+
+Ed approved the PR #6 experience and authorized a bounded follow-up through PR,
+kommiBo review and deployment: one floating, nebulous hero phrase at a time in a
+loop; 15% larger hero symbol, lettering and both legends; a direct Contact-to-home
+arrow; successful contact replaced by thanks until leaving and returning; and a
+tall Interferometry panel to the right of the lifecycle on sufficiently wide views.
+The refreshed base `b5d7834` also retains the unrelated approved PR #7 attribution
+configuration. The verified bundle and tag
+`rollback/aekr-web-pre-hero-contact-refinement-2026-09-05` preserve that base;
+the exact PR #4 recovery tag below remains available.
+
+Before implementation: this mixed visual/state task extends the current DOM,
+native animation and section-selection state. Static hero prose, the existing
+contact handler and lifecycle markup are the reuse boundaries. The current prose
+never rotates, successful submissions leave the controls usable, and the wide
+verification paragraph adds height below the stages. No general carousel, new
+renderer, dependency, router, server API or deployment setting is needed. Changes
+are limited to existing presentation/script files, focused browser tests and this
+guide; artwork, background renderer, section transitions, footer and unrelated
+section copy remain intact. A separate UI/UX design pass recommends a six-second
+phrase cycle with a long readable dwell, soft drift and restrained motes, real
+layout sizing, and a discrete pause control. Motion pauses off-screen and outside
+the hero; reduced motion retains stable prose. Narrow layouts may wrap naturally.
+
+Verification will measure the 15% scale, check phrase sequencing/pause and reduced
+motion, compare lifecycle height and narrow readability, and exercise successful,
+failed, duplicate and pending contact submissions with intercepted requests only.
+Leaving/re-entering Contact must not let an old response close a new visit. The
+existing direct hash route supplies the home arrow without intermediate sections.
+Separate technical and visual review applies to this increment, not a Full Audit.
+
+Implementation result: six short hero phrases share a fixed-height grid and a
+six-second native animation cycle. One small pause control leaves the current
+phrase readable; section visibility, tab visibility and motion preference stop
+the loop. Existing prose remains the stable accessibility and no-JavaScript
+equivalent. The four hero brand dimensions increase by 15%, with narrow-width
+containment retained. Interferometry uses the available desktop reading width
+and a dark translucent panel; mobile keeps the original vertical reading order.
+Contact requires the existing server's explicit `ok: true` response before
+replacing the form with thanks. A per-visit counter rejects stale UI updates,
+while the existing in-flight guard prevents duplicate requests. The home arrow
+uses the existing direct hash route. No server payload, public API, dependency,
+configuration or Project Map topology changes. The original atmosphere and full
+section/symbol controller prefixes remain byte-identical.
+
+The changed inventory is HTML, styles, the two browser scripts, this guide and
+the existing browser suite. Added complexity serves one optional animation loop
+and contact visit ownership; native animation cancellation, layout containment,
+focus and overflow are reused rather than introducing a second navigation or
+rendering abstraction. Separate review checks these boundaries. Desktop browser
+measurements confirm the 15% scale and a roughly 25% reduction in lifecycle
+scroll height, with every stage visible at 1440 by 1000. Contact tests intercept
+all sends and cover accepted, rejected, malformed and delayed responses, repeated
+submission, visit changes and enlarged-text acknowledgment. Visual review also
+checks phrase phases, panel contrast and the initial acknowledgment position.
+Exact file deltas, output hashes, validation and review receipts accompany the
+recovery bundle outside the public tree. Merged-source and live-provider readback
+remain the final delivery checks.
 
 ## Nebular transition refinement — 2026-09-05
 
