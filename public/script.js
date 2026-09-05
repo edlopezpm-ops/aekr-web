@@ -617,6 +617,7 @@
   let submitting = false;
   let completed = false;
   let lastClicked = null;
+  let statusMessage = "";
   let inContact = main?.dataset.activeSection === "contact";
   let visit = inContact ? 1 : 0;
 
@@ -626,8 +627,15 @@
     });
   });
 
+  function translateStatus() {
+    status.textContent = window.AEKRLanguage?.text(statusMessage) ?? statusMessage;
+  }
+
+  document.addEventListener("aekr:languagechange", translateStatus);
+
   function setStatus(message, variant) {
-    status.textContent = message;
+    statusMessage = message;
+    translateStatus();
     status.classList.remove("form-status--success", "form-status--error");
     if (variant) status.classList.add(`form-status--${variant}`);
   }

@@ -49,6 +49,10 @@
           "path": "public/sections.js"
         },
         {
+          "id": "language-selection",
+          "path": "public/i18n.js"
+        },
+        {
           "id": "site-assets",
           "path": "public/assets/"
         },
@@ -265,6 +269,35 @@
             "navigation",
             "accessibility",
             "transitions"
+          ]
+        },
+        {
+          "id": "language-selection",
+          "path": "public/i18n.js",
+          "authority": "implementation",
+          "summary": "Selects English or Spanish copy and coordinates language changes without network translation.",
+          "label": "Language selection",
+          "kind": "Browser interactions",
+          "responsibilities": [
+            "Apply local English and Spanish copy and accessible labels.",
+            "Persist explicit preference and notify existing motion and contact controllers."
+          ],
+          "boundaries": [
+            "No remote translation, HTML injection or contact delivery ownership."
+          ],
+          "useWhen": [
+            "Change translations or inspect locale selection and reflow."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/sections.js",
+            "public/script.js",
+            "tests/sections.mjs"
+          ],
+          "tags": [
+            "language",
+            "accessibility",
+            "localization"
           ]
         },
         {

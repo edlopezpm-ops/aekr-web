@@ -202,6 +202,7 @@ p {
    ========================================================================== */
 
 .site-header {
+  flex-wrap: wrap;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -417,21 +418,13 @@ main {
   line-height: 1.6;
 }
 
-.hero-tagline {
-  margin: var(--space-3) 0 0;
-  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
-  color: var(--fg);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
 /* Every phrase occupies the same grid cell, reserving the tallest wrapped line.
    The original prose stays available to assistive technology and without JS. */
 .hero-story {
   position: relative;
   width: 100%;
   max-width: 58ch;
-  margin-top: 1.75rem;
+  margin-top: 40px;
   padding-inline: 34px;
   color: var(--fg-muted);
   font-size: clamp(1.05rem, 2vw, 1.22rem);
@@ -1152,7 +1145,8 @@ main {
   display: none;
 }
 
-.brand-traveler {
+.brand-traveler,
+.brand-particles {
   position: fixed;
   top: 0;
   left: 0;
@@ -1162,7 +1156,8 @@ main {
   pointer-events: none;
 }
 
-.brand-traveler[hidden] {
+.brand-traveler[hidden],
+.brand-particles[hidden] {
   display: none;
 }
 
@@ -1173,9 +1168,9 @@ main {
   height: 124%;
   opacity: 0;
   background:
-    radial-gradient(ellipse 42% 32% at 25% 68%, color-mix(in srgb, var(--nebula-mint) 34%, transparent), transparent 72%),
-    radial-gradient(ellipse 38% 46% at 74% 26%, color-mix(in srgb, var(--nebula-steel) 32%, transparent), transparent 74%);
-  filter: blur(30px);
+    radial-gradient(ellipse 46% 34% at var(--mist-x, 30%) var(--mist-y, 65%), color-mix(in srgb, var(--nebula-mint) 28%, transparent), transparent 72%),
+    radial-gradient(ellipse 38% 46% at 74% 26%, color-mix(in srgb, var(--nebula-steel) 26%, transparent), transparent 74%);
+  filter: blur(36px);
 }
 
 .sections-enabled,
@@ -1310,12 +1305,8 @@ main {
   margin-top: 1.25rem;
 }
 
-.sections-enabled .hero-tagline {
-  margin-top: 1.75rem;
-}
-
 .sections-enabled .cta-row {
-  margin-top: 1.75rem;
+  margin-top: 40px;
 }
 
 .sections-enabled .principles,
@@ -1469,6 +1460,53 @@ main {
   }
 }
 
+/* One native language control moves between the header and compact disclosure. */
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+  color: var(--fg-muted);
+  font-size: .8rem;
+}
+
+.language-control label {
+  flex-shrink: 0;
+}
+
+.language-control select {
+  min-width: max-content;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.site-header > .language-control {
+  margin-left: auto;
+}
+
+.sections-enabled .language-control + .header-cta {
+  margin-left: 0;
+}
+
+.sections-enabled.sections-compact .section-nav .language-control {
+  min-width: 0;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 4px 12px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: .9rem;
+}
+
+.sections-enabled.sections-compact .language-control select {
+  flex: 1 1 100px;
+}
+
 /* One compact shell reuses the desktop anchors and selected section. The
    controller resolves the same narrow/coarse-landscape condition for focus. */
 .sections-enabled .section-nav[hidden] {
@@ -1620,9 +1658,7 @@ main {
 
 .sections-enabled.sections-compact .hero-story {
   padding-inline: 0;
-  margin-top: 24px;
-  overflow: clip;
-  overflow-clip-margin: 16px;
+  margin-top: 32px;
 }
 
 .sections-enabled.sections-compact .hero-pause {
@@ -1630,9 +1666,8 @@ main {
   margin: 4px auto 0;
 }
 
-.sections-enabled.sections-compact .hero-tagline,
 .sections-enabled.sections-compact .cta-row {
-  margin-top: 20px;
+  margin-top: 28px;
 }
 
 .sections-enabled.sections-compact .cta-row {
@@ -1760,13 +1795,7 @@ main {
   .sections-enabled.sections-compact .hero-story,
   .sections-enabled.sections-compact .hero-lede:not(.visually-hidden) {
     grid-column: 2;
-    grid-row: 1;
-    margin: 0;
-  }
-
-  .sections-enabled.sections-compact .hero-tagline {
-    grid-column: 2;
-    grid-row: 2;
+    grid-row: 1 / 3;
     margin: 0;
   }
 
