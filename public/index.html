@@ -1,9 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="sections-enabled">
 <head>
 <meta charset="utf-8">
 <title>AEKR — AI-native, human-orchestrated software engineering</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* Browsers may defer the initial :target until deferred scripts finish. */
+(() => {
+  const root = document.documentElement;
+  let target;
+  try { target = decodeURIComponent(location.hash.slice(1)).match(/^(practice|orchestration|lifecycle|engagements|why|contact)(?:-|$)/)?.[1]; } catch {}
+  if (!target) return;
+  root.dataset.initialPanel = target;
+  const clear = () => { delete root.dataset.initialPanel; };
+  window.addEventListener('load', clear, { once: true });
+  window.addEventListener('hashchange', clear, { once: true });
+})();
+</script>
 <meta name="description" content="AEKR is an AI-native, human-orchestrated software engineering practice. We turn ambiguous ideas and operational problems into engineering outcomes you can inspect, verify, and own.">
 <link rel="canonical" href="https://aekr.io/">
 <meta property="og:type" content="website">
@@ -16,10 +29,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AEKR — AI-native, human-orchestrated software engineering">
 <meta name="twitter:description" content="Orchestration, verification, control. AEKR turns ambiguous ideas into engineering outcomes you can inspect, verify, and own.">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#f6f2e9">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/assets/aekr-mark.png">
+<link rel="preload" as="image" href="/assets/aekr-microscales-surface-v1.webp" media="(min-width: 768px)">
+<link rel="preload" as="image" href="/assets/aekr-microscales-mobile-v1.webp" media="(max-width: 767px)">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="startup.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -37,13 +53,13 @@
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<div class="atmosphere" aria-hidden="true">
-  <canvas class="atmosphere__starfield"></canvas>
-  <div class="atmosphere__nebula"></div>
-  <div class="atmosphere__scrim"></div>
+<div class="atmosphere" aria-hidden="true" inert>
+  <div class="atmosphere__surface"></div>
+  <canvas class="atmosphere__scales"></canvas>
 </div>
 
 <header class="site-header">
+  <a class="section-menu-fallback" href="#section-navigation">Menu</a>
   <button class="section-menu-toggle" type="button" aria-expanded="false" aria-controls="section-navigation">Menu</button>
   <a class="wordmark" href="#main" aria-label="AEKR — home"><span class="brand-lettering" aria-hidden="true"></span><span class="visually-hidden">AEKR</span></a>
   <a class="brand-dock" href="#main" aria-label="AEKR — home"></a>
@@ -57,6 +73,7 @@
 </header>
 
 <nav class="section-nav" id="section-navigation" aria-label="Sections">
+  <a class="section-home-fallback" href="#main">AEKR — home</a>
   <a href="#practice"><span class="section-nav__stroke" aria-hidden="true"></span><span class="section-nav__label">The practice</span></a>
   <a href="#orchestration"><span class="section-nav__stroke" aria-hidden="true"></span><span class="section-nav__label">Control model</span></a>
   <a href="#lifecycle"><span class="section-nav__stroke" aria-hidden="true"></span><span class="section-nav__label">Delivery lifecycle</span></a>
@@ -67,8 +84,8 @@
 
 <main id="main">
 
-  <section class="hero">
-    <img class="hero-mark" src="assets/aekr-mark.png" alt="" width="225" height="225" fetchpriority="high" decoding="async">
+  <section class="hero section-panel">
+    <img class="hero-mark" src="assets/aekr-mark-ivory-v1.png" alt="" width="225" height="225" fetchpriority="high" decoding="async">
     <h1 class="hero-title"><span class="brand-lettering" aria-hidden="true"></span><span class="visually-hidden">AEKR</span></h1>
     <p class="hero-expansion">AI Engineering Knowledge Racking</p>
     <p class="eyebrow">Orchestration <span aria-hidden="true">·</span> Verification <span aria-hidden="true">·</span> Control</p>
@@ -77,13 +94,25 @@
       ambiguous ideas and operational problems into engineering outcomes you
       can inspect, verify, and own. Humans orchestrate. Machines execute.
     </p>
+    <div class="hero-story">
+      <div class="hero-phrases" aria-hidden="true">
+        <span class="hero-phrase is-current">An AI-native, human-orchestrated engineering practice.</span>
+        <span class="hero-phrase">Humans orchestrate. Machines execute.</span>
+        <span class="hero-phrase">From ambiguous ideas to clear engineering direction.</span>
+        <span class="hero-phrase">Engineering outcomes you can inspect, verify, and own.</span>
+        <span class="hero-phrase">Architecture with intent. Delivery with control.</span>
+        <span class="hero-phrase">Human-led decisions. Evidence at every step.</span>
+        <span class="hero-phrase">Software you can understand, transfer, and own.</span>
+      </div>
+      <button class="hero-pause" type="button" aria-label="Pause rotating introduction" aria-pressed="false"></button>
+    </div>
     <div class="cta-row">
       <a class="btn btn-primary" href="#contact">Start a conversation</a>
       <a class="btn btn-ghost" href="#engagements">How engagements work</a>
     </div>
   </section>
 
-  <section class="section" id="practice" aria-labelledby="practice-heading">
+  <section class="section section-panel" id="practice" aria-labelledby="practice-heading">
     <p class="section-label">The practice</p>
     <h2 id="practice-heading">What AEKR does</h2>
     <p class="lede">
@@ -129,7 +158,7 @@
     </ul>
   </section>
 
-  <section class="section" id="orchestration" aria-labelledby="orchestration-heading">
+  <section class="section section-panel" id="orchestration" aria-labelledby="orchestration-heading">
     <p class="section-label">Control model</p>
     <h2 id="orchestration-heading">Gravital Orchestration</h2>
     <p class="lede">
@@ -172,7 +201,7 @@
     </p>
   </section>
 
-  <section class="section" id="lifecycle" aria-labelledby="lifecycle-heading">
+  <section class="section section-panel" id="lifecycle" aria-labelledby="lifecycle-heading">
     <p class="section-label">Delivery lifecycle</p>
     <h2 id="lifecycle-heading">How the work progresses</h2>
     <p class="lede">
@@ -242,7 +271,7 @@
     </div>
   </section>
 
-  <section class="section" id="engagements" aria-labelledby="engagements-heading">
+  <section class="section section-panel" id="engagements" aria-labelledby="engagements-heading">
     <p class="section-label">Engagements</p>
     <h2 id="engagements-heading">One project. Different depths of completion.</h2>
     <p class="lede">
@@ -275,7 +304,7 @@
     </p>
   </section>
 
-  <section class="section" id="why" aria-labelledby="why-heading">
+  <section class="section section-panel" id="why" aria-labelledby="why-heading">
     <p class="section-label">Why this model</p>
     <h2 id="why-heading">Controlled engineering, accelerated</h2>
     <p class="lede">
@@ -303,7 +332,7 @@
     </ul>
   </section>
 
-  <section class="section section-contact" id="contact" aria-labelledby="contact-heading">
+  <section class="section section-contact section-panel" id="contact" aria-labelledby="contact-heading">
     <p class="section-label">Contact</p>
     <h2 id="contact-heading">Tell us what you need built</h2>
     <p class="lede">
@@ -374,7 +403,7 @@
 
 <footer class="site-footer">
   <p class="provenance">
-    <img src="assets/aekr-banner.png" alt="Build with AEKR" width="360" height="103" loading="lazy" decoding="async">
+    <img src="assets/aekr-banner-ivory-v1.png" alt="Build with AEKR" width="360" height="103" loading="lazy" decoding="async">
   </p>
   <p class="footer-legal">© 2026</p>
 </footer>
@@ -382,5 +411,7 @@
 <script src="i18n.js" defer></script>
 <script src="script.js" defer></script>
 <script src="sections.js" defer></script>
+<script src="/microscales-config.js" defer></script>
+<script src="/microscales.js" defer></script>
 </body>
 </html>

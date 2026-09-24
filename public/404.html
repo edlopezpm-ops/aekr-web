@@ -5,17 +5,16 @@
 <title>Not found — AEKR</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#f6f2e9">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<div class="atmosphere" aria-hidden="true">
-  <canvas class="atmosphere__starfield"></canvas>
-  <div class="atmosphere__nebula"></div>
-  <div class="atmosphere__scrim"></div>
+<div class="atmosphere" aria-hidden="true" inert>
+  <div class="atmosphere__surface"></div>
+  <canvas class="atmosphere__scales"></canvas>
 </div>
 
 <header class="site-header">
@@ -35,5 +34,7 @@
 </main>
 
 <script src="/script.js" defer></script>
+<script src="/microscales-config.js" defer></script>
+<script src="/microscales.js" defer></script>
 </body>
 </html>

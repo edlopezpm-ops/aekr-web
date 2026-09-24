@@ -1,5 +1,5 @@
-/* Progressive section navigation. The document remains a normal page if this
-   controller is unavailable; the atmosphere and contact form own their events. */
+/* Progressive section navigation. HTML/CSS already provide hash-addressable
+   panels if this controller is unavailable. Decoration owns its own events. */
 (() => {
   const root = document.documentElement;
   const main = document.querySelector('main');
@@ -12,14 +12,14 @@
   const text = value => window.AEKRLanguage?.text(value) || value;
   const heroMark = document.querySelector('.hero-mark');
   const dock = document.querySelector('.brand-dock');
-  const atmosphere = document.querySelector('.atmosphere');
   const panels = Array.from(main?.querySelectorAll(':scope > section') || []);
-  const links = Array.from(navigation?.querySelectorAll('a') || []);
-  if (!main || !header || !footer || !menuToggle || !status || !heroMark || !dock || !atmosphere || panels.length !== 7 || links.length !== 6) return;
+  const links = Array.from(navigation?.querySelectorAll('a:not(.section-home-fallback)') || []);
+  if (!main || !header || !footer || !menuToggle || !status || !heroMark || !dock || panels.length !== 7 || links.length !== 6) return;
   if (typeof ResizeObserver !== 'function' || !('inert' in HTMLElement.prototype) || !Element.prototype.animate) return;
 
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const compact = window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1024px) and (max-height: 560px)');
+  let isCompact = compact.matches;
   const editable = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
   const controls = `${editable}, button, a`;
   let current = 0;
@@ -34,6 +34,7 @@
   let animationId = 0;
   let animations = [];
   let menuOpen = false;
+  let lastFocused = document.activeElement;
 
   const traveler = heroMark.cloneNode(false);
   traveler.className = 'brand-traveler';
@@ -41,9 +42,6 @@
   traveler.setAttribute('aria-hidden', 'true');
   traveler.hidden = true;
   document.body.append(traveler);
-  const mist = document.createElement('div');
-  mist.className = 'atmosphere__transition';
-  atmosphere.append(mist);
 
   const sectionName = index => index === 0 ? 'main' : panels[index].id;
   const canScroll = (panel, direction) => direction > 0
@@ -69,7 +67,7 @@
 
   function fitHeader() {
     const mark = dock.getBoundingClientRect();
-    const left = (compact.matches ? menuToggle : header.querySelector('.wordmark')).getBoundingClientRect();
+    const left = (isCompact ? menuToggle : header.querySelector('.wordmark')).getBoundingClientRect();
     const contact = header.querySelector('.header-cta').getBoundingClientRect();
     const rightEdge = languageControl?.parentElement === header
       ? Math.min(contact.left, languageControl.getBoundingClientRect().left) : contact.left;
@@ -77,28 +75,30 @@
   }
 
   function setMenu(open, returnFocus = false) {
-    menuOpen = compact.matches && open;
+    menuOpen = isCompact && open;
     menuToggle.setAttribute('aria-expanded', String(menuOpen));
-    navigation.hidden = compact.matches && !menuOpen;
+    navigation.hidden = isCompact && !menuOpen;
     navigation.inert = navigation.hidden;
     if (returnFocus) menuToggle.focus({ preventScroll: true });
   }
 
   function moveLanguageControl() {
     if (!languageControl) return;
-    if (compact.matches) navigation.prepend(languageControl);
+    if (isCompact) navigation.prepend(languageControl);
     else header.insertBefore(languageControl, header.querySelector('.header-cta'));
   }
 
   function updateCompact() {
-    const focused = document.activeElement;
+    // Media-query CSS can hide a focused control before this event is delivered.
+    const focused = document.activeElement === document.body && !lastFocused.getClientRects().length
+      ? lastFocused : document.activeElement;
     const wordmark = header.querySelector('.wordmark');
     const languageFocused = languageControl?.contains(focused);
-    root.classList.toggle('sections-compact', compact.matches);
+    root.classList.toggle('sections-compact', isCompact);
     moveLanguageControl();
     setMenu(false);
-    if (compact.matches && (focused === wordmark || navigation.contains(focused) || languageFocused)) menuToggle.focus({ preventScroll: true });
-    else if (!compact.matches && focused === menuToggle) wordmark.focus({ preventScroll: true });
+    if (isCompact && (focused === wordmark || navigation.contains(focused) || languageFocused)) menuToggle.focus({ preventScroll: true });
+    else if (!isCompact && focused === menuToggle) wordmark.focus({ preventScroll: true });
     else if (languageFocused) focused.focus({ preventScroll: true });
     settleMotion();
   }
@@ -147,14 +147,6 @@
       { opacity: 1, filter: 'blur(0px)', transform: `translateY(${-direction * 1.5}px)`, offset: .85 },
       { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0px)' }
     ], { delay: 460, duration: 820, easing, fill: 'both' }));
-    mist.style.setProperty('--mist-x', `${22 + Math.random() * 18}%`);
-    mist.style.setProperty('--mist-y', `${55 + Math.random() * 18}%`);
-    animations.push(mist.animate([
-      { opacity: 0, transform: 'translate(-3%, 2%) scale(0.96)', offset: 0 },
-      { opacity: 0.38, transform: 'translate(0%, 0%) scale(1.02)', offset: 0.38 },
-      { opacity: 0, transform: 'translate(4%, -3%) scale(1.08)', offset: 1 }
-    ], { duration, easing: 'ease-in-out' }));
-
     heroMark.classList.add('hero-mark--traveling');
     traveler.hidden = false;
     placeTraveler(target);
@@ -234,11 +226,13 @@
   });
   panels[0].setAttribute('aria-label', text('AEKR introduction'));
   root.classList.add('sections-enabled');
-  root.classList.toggle('sections-compact', compact.matches);
+  root.classList.toggle('sections-compact', isCompact);
   moveLanguageControl();
   setMenu(false);
   measureViewport();
   show(Math.max(0, indexForHash(location.hash)), { history: false, initial: true });
+  root.classList.add('sections-ready');
+  navigation.querySelector('.section-home-fallback')?.remove();
   window.history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
 
@@ -262,10 +256,11 @@
     announce();
     settleMotion();
   });
-  compact.addEventListener('change', updateCompact);
+  compact.addEventListener('change', event => { isCompact = event.matches; updateCompact(); });
   menuToggle.addEventListener('click', () => setMenu(!menuOpen));
 
   document.addEventListener('focusin', event => {
+    lastFocused = event.target;
     if (menuOpen && !header.contains(event.target) && !navigation.contains(event.target)) setMenu(false);
   });
 
@@ -275,7 +270,7 @@
     const index = link ? indexForHash(link.hash) : -1;
     if (index >= 0) {
       event.preventDefault();
-      show(index, { focus: menuOpen || link.classList.contains('skip-link') || (compact.matches && navigation.contains(link)) });
+      show(index, { focus: menuOpen || link.classList.contains('skip-link') || (isCompact && navigation.contains(link)) });
     } else if (menuOpen && !navigation.contains(event.target) && !menuToggle.contains(event.target)) setMenu(false, true);
   });
 
@@ -403,25 +398,15 @@
     'Human-led decisions. Evidence at every step.',
     'Software you can understand, transfer, and own.',
   ];
-  const story = document.createElement('div');
-  story.className = 'hero-story';
-  const lines = document.createElement('div');
-  lines.className = 'hero-phrases';
-  lines.setAttribute('aria-hidden', 'true');
-  const spans = phrases.map(phrase => {
-    const span = document.createElement('span');
-    span.className = 'hero-phrase';
-    span.textContent = text(phrase);
-    lines.append(span);
-    return span;
-  });
-  const pause = document.createElement('button');
-  pause.type = 'button';
-  pause.className = 'hero-pause';
+  const story = document.querySelector('.hero-story');
+  const lines = story?.querySelector('.hero-phrases');
+  const spans = Array.from(lines?.querySelectorAll('.hero-phrase') || []);
+  const pause = story?.querySelector('.hero-pause');
+  if (!story || !lines || !pause || spans.length !== phrases.length) return;
+  spans.forEach((span, i) => { span.textContent = text(phrases[i]); });
+  story.classList.add('story-ready');
   pause.setAttribute('aria-label', text('Pause rotating introduction'));
   pause.setAttribute('aria-pressed', 'false');
-  story.append(lines, pause);
-  lede.after(story);
 
   let index = 0, userPaused = false, inView = false;
   let animation = null, timer = 0;

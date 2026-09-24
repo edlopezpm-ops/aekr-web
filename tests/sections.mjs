@@ -21,6 +21,7 @@ if (!base) {
       const target = path.resolve(root, 'public', relative);
       if (!target.startsWith(path.join(root, 'public') + path.sep)) throw new Error('Invalid path');
       res.setHeader('Content-Type', mime[path.extname(target)] || 'application/octet-stream');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
       res.end(await readFile(target));
     } catch { res.writeHead(404).end(); }
   });
@@ -138,6 +139,71 @@ async function brandFrame(page) {
   });
 }
 
+async function startupGeometry() {
+  for (const scenario of [
+    { name: 'cold-warm', width: 1440, height: 1000 },
+    { name: 'delayed-desktop', width: 1440, height: 1000, delay: true },
+    { name: 'delayed-mobile', width: 390, height: 844, delay: true },
+    { name: 'delayed-reduced', width: 1440, height: 1000, delay: true, reduced: true },
+    { name: 'delayed-deep-link', width: 390, height: 844, delay: true, hash: '#contact' },
+  ]) {
+    const context = await browser.newContext({ viewport: { width: scenario.width, height: scenario.height },
+      reducedMotion: scenario.reduced ? 'reduce' : 'no-preference' });
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    if (scenario.delay) await page.route(/\.js(?:\?|$)/, async route => {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      await route.continue();
+    });
+    await page.addInitScript(() => {
+      window.startupFrames = [];
+      let last = '';
+      const sample = () => {
+        const main = document.querySelector('main');
+        if (main?.children.length === 7) {
+          const rect = main.getBoundingClientRect();
+          const bounds = selector => {
+            const element = document.querySelector(selector);
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            return [box.x, box.y, box.width, box.height];
+          };
+          const state = { x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+            documentHeight: document.documentElement.scrollHeight,
+            visible: [...main.children].filter(el => el.checkVisibility({ checkVisibilityCSS: true })).map(el => el.id || 'main'),
+            story: bounds('.hero-story'), mark: bounds('.hero-mark'),
+            header: bounds('.site-header'), footer: bounds('.site-footer'),
+            color: getComputedStyle(document.body).backgroundColor };
+          const key = JSON.stringify(state);
+          if (key !== last) { window.startupFrames.push(state); last = key; }
+        }
+        if (performance.now() < 2200) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    const verify = async label => {
+      await page.waitForTimeout(scenario.delay ? 1600 : 350);
+      const frames = await page.evaluate(() => window.startupFrames);
+      assert(frames.length > 0, `${label}: startup frames captured`);
+      const settled = frames.at(-1);
+      assert.deepEqual(settled.visible, [scenario.hash?.slice(1) || 'main'], `${label}: correct initial panel`);
+      for (const frame of frames) {
+        assert.deepEqual(frame, settled, `${label}: first visible panel geometry/color stays stable`);
+        assert.equal(frame.documentHeight, scenario.height, `${label}: no long-document first paint`);
+        assert.equal(frame.color, 'rgb(246, 242, 233)', `${label}: ivory from first paint`);
+      }
+    };
+    await page.goto(base + '/' + (scenario.hash || ''), { waitUntil: 'commit' });
+    await verify(scenario.name);
+    if (scenario.name === 'cold-warm') {
+      await page.reload({ waitUntil: 'commit' });
+      await verify('warm');
+    }
+    await context.close();
+  }
+  console.log('PASS: cold/warm, delayed JavaScript, mobile, reduced motion and deep-link first paints retain one ivory panel shell');
+}
+
 async function brandJourney(page, label) {
   await go(page, 'main');
   const home = await brandFrame(page);
@@ -177,11 +243,35 @@ async function brandJourney(page, label) {
 }
 
 try {
-  const page = await open({ viewport: { width: 1440, height: 1000 } });
+  await startupGeometry();
+  const page = await open({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' }, '', {}, () => {
+    window.atmosphereDraws = 0;
+    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.classList.contains('atmosphere__scales')) window.atmosphereDraws++;
+      return clear.apply(this, args);
+    };
+  });
   await active(page, 'main'); await geometry(page);
+  assert.equal(await page.locator('.background-pause').count(), 0, 'The owner-requested background has no pause button');
+  await page.waitForFunction(() => document.querySelector('.atmosphere').dataset.renderer === 'canvas2d'
+    && Number(document.querySelector('.atmosphere').dataset.particles) > 0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => document.querySelector('.atmosphere').dataset.paused === 'true'
+    && document.querySelector('.atmosphere').dataset.particles === '0');
+  const still = await page.evaluate(() => ({ draws: window.atmosphereDraws,
+    drift: document.querySelector('.atmosphere').style.getPropertyValue('--surface-drift') }));
+  await page.waitForTimeout(200);
+  assert.deepEqual(await page.evaluate(() => ({ draws: window.atmosphereDraws,
+    drift: document.querySelector('.atmosphere').style.getPropertyValue('--surface-drift') })), still,
+  'Dynamic reduced motion stops decorative drawing and surface drift');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.waitForFunction(draws => document.querySelector('.atmosphere').dataset.paused === 'false'
+    && window.atmosphereDraws > draws, still.draws);
+  console.log('PASS: live reduced-motion changes clear flights, stop drawing and resume the same background');
   assert.equal(await page.locator('.hero-particles, .brand-particles').count(), 0, 'Phrase and symbol particle layers are removed');
   assert(await page.locator('canvas').evaluateAll(canvases => canvases.every(canvas => canvas.closest('.atmosphere'))),
-    'Only the unchanged atmosphere owns Canvas elements');
+    'Only the decorative atmosphere owns Canvas elements');
   await brandJourney(page, 'desktop-brand');
   console.log('PASS: original bitmap travel, centered dock, stable header and reverse return without particle layers');
   if (process.env.BASELINE_REF && !process.env.SITE_URL) {
@@ -191,9 +281,11 @@ try {
       const parse = source => new DOMParser().parseFromString(source, 'text/html');
       const old = parse(baseline), next = parse(current);
       const normalize = el => el.textContent.replace(/\s+/g, ' ').trim();
-      return ['#practice', '#orchestration', '#engagements', '#why', '#contact-form', '.site-footer']
+      return ['#practice', '#orchestration', '#engagements', '#why', '#contact-form']
         .every(selector => old.querySelector(selector).innerHTML === next.querySelector(selector).innerHTML) &&
-        normalize(old.querySelector('#lifecycle')) === normalize(next.querySelector('#lifecycle'));
+        normalize(old.querySelector('#lifecycle')) === normalize(next.querySelector('#lifecycle')) &&
+        normalize(old.querySelector('.site-footer')) === normalize(next.querySelector('.site-footer')) &&
+        old.querySelector('.provenance img').alt === next.querySelector('.provenance img').alt;
     }, { baseline, current });
     assert(same, 'Unchanged sections/form/footer retain markup; all lifecycle wording is preserved');
     const sources = { 'index.html': baseline };
@@ -202,8 +294,8 @@ try {
     }
     const currentScript = await readFile(path.join(root, 'public/script.js'), 'utf8');
     const contactBoundary = '   Both buttons post to the same endpoint';
-    assert.equal(currentScript.split(contactBoundary)[0], sources['script.js'].split(contactBoundary)[0],
-      'The atmosphere and its handlers remain byte-identical');
+    assert.equal(currentScript.split(contactBoundary)[1], sources['script.js'].split(contactBoundary)[1],
+      'The contact interface and request handlers remain byte-identical');
     assert.equal(await page.locator('.hero-tagline').count(), 0, 'The fixed tagline is removed');
     assert.equal(await page.locator('.hero-phrase').filter({ hasText: 'Humans orchestrate. Machines execute.' }).count(), 1,
       'The former tagline appears once in the phrase loop');
@@ -237,9 +329,8 @@ try {
     const desktopLayout = p => p.evaluate(() => {
       const elements = document.querySelectorAll('.site-header, .site-footer, .section-nav, .section-panel.is-active h2, .section-panel.is-active h3, .section-panel.is-active p, .section-panel.is-active li, .section-panel.is-active input, .section-panel.is-active textarea');
       return [...elements].map(el => {
-        const r = el.getBoundingClientRect(), style = getComputedStyle(el);
-        return { text: el.textContent.trim(), box: [r.x, r.y, r.width, r.height].map(n => Math.round(n * 100) / 100),
-          color: style.color, fontSize: style.fontSize, lineHeight: style.lineHeight };
+        const style = getComputedStyle(el);
+        return { text: el.textContent.trim(), fontSize: style.fontSize, lineHeight: style.lineHeight };
       });
     });
     for (const id of ids.slice(1)) {
@@ -247,9 +338,9 @@ try {
       const before = await desktopLayout(oldPage), after = await desktopLayout(page);
       // The compact-only Menu button is hidden on desktop but part of header text.
       before[0].text = after[0].text = '';
-      assert.deepEqual(after, before, `Desktop ${id} keeps its layout and typography`);
+      assert.deepEqual(after, before, `Desktop ${id} keeps its content and typography`);
     }
-    console.log('PASS: desktop appearance, approved identity, unchanged atmosphere/contact boundaries and Back preserved');
+    console.log('PASS: approved identity, section content/typography, unchanged contact boundary and Back preserved');
     await oldPage.context().close();
   }
   const heroPage = await open({ viewport: { width: 1440, height: 1000 } }, '', {}, () => {
@@ -380,22 +471,26 @@ try {
     if (shots) await page.screenshot({ path: path.join(shots, `desktop-${id}.png`) });
   }
   await go(page, 'practice');
-  await page.locator('.section-nav a[href="#orchestration"]').click();
-  await page.waitForTimeout(100);
-  const early = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
-  const mistStart = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
-  assert(early < 0.1, 'Incoming text waits while the outgoing view dissolves');
-  await page.waitForTimeout(600);
-  const fade = await page.locator('#orchestration').evaluate(p => Number(getComputedStyle(p).opacity));
-  const mistPeak = await page.locator('.atmosphere__transition').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
-  assert(mistPeak.opacity > 0.1 && mistPeak.opacity > mistStart.opacity && mistPeak.transform !== mistStart.transform,
-    'Nebular mist moves and rises during the transition');
-  assert(fade > 0 && fade < 1, 'Navigation actually fades the incoming view');
-  await page.waitForTimeout(500);
-  assert.equal(await page.locator('main').getAttribute('data-transitioning'), 'true', 'The gentle transition remains active beyond 1.2 seconds');
+  const transitionFrames = await page.evaluate(async () => {
+    const frames = [], start = performance.now();
+    document.querySelector('.section-nav a[href="#orchestration"]').click();
+    return new Promise(resolve => {
+      const sample = () => {
+        const elapsed = performance.now() - start;
+        const transitioning = document.querySelector('main').dataset.transitioning === 'true';
+        frames.push({ elapsed, transitioning, opacity: Number(getComputedStyle(document.querySelector('#orchestration')).opacity) });
+        if (transitioning && elapsed < 5000) requestAnimationFrame(sample);
+        else resolve(frames);
+      };
+      requestAnimationFrame(sample);
+    });
+  });
+  assert.equal(await page.locator('.atmosphere__transition').count(), 0, 'Navigation does not create a decorative transition layer');
+  assert(transitionFrames[0].opacity < 0.1, 'Incoming text waits while the outgoing view dissolves');
+  assert(transitionFrames.some(frame => frame.opacity > 0 && frame.opacity < 1), 'Navigation actually fades the incoming view');
+  assert(transitionFrames.some(frame => frame.elapsed > 1200 && frame.transitioning), 'The gentle transition remains active beyond 1.2 seconds');
   await active(page, 'orchestration');
-  assert.equal(await page.locator('.atmosphere__transition').evaluate(el => Number(getComputedStyle(el).opacity)), 0,
-    'The temporary mist clears after the transition');
+  assert.equal(await page.locator('.atmosphere__transition').count(), 0, 'The persistent background remains independent of navigation');
   console.log('PASS: six links, one visible/accessibile view, preserved content and fixed layout');
 
   await go(page, 'orchestration'); await edge(page, true);
@@ -915,21 +1010,28 @@ try {
     const ordinary = await open({ viewport: { width: 320, height: 568 } }, '',
       unavailable === 'controller' ? { 'sections.js': '/* Optional navigation controller unavailable. */' } : {},
       unavailable === 'web-animations' ? () => { Element.prototype.animate = undefined; } : undefined);
-    assert.equal(await ordinary.locator('html').evaluate(el => el.classList.contains('sections-enabled')), false);
-    assert(await ordinary.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')),
-      'Without the optional motion capability the original introduction remains readable');
+    assert.equal(await ordinary.locator('html.sections-enabled:not(.sections-ready)').count(), 1);
+    assert(await ordinary.locator('.hero-phrase.is-current').isVisible(),
+      'Without the optional controller or motion capability the static introduction remains readable');
     for (const language of ['en', 'es']) {
       await chooseLanguage(ordinary, language);
       assert.equal(await ordinary.locator('html').getAttribute('lang'), language);
+      assert.equal((await ordinary.locator('.hero-phrase.is-current').textContent()).trim(), language === 'es'
+        ? 'Ingeniería nativa en IA, orquestada por personas.'
+        : 'An AI-native, human-orchestrated engineering practice.', 'The static introduction follows the fallback language');
       assert(await ordinary.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
         'Without the optional section controller, the bilingual document has no horizontal overflow');
       const contact = await ordinary.locator('.header-cta').boundingBox();
       assert(contact.x >= 0 && contact.x + contact.width <= 321, 'Fallback Contact remains inside the viewport');
-      assert(await ordinary.locator('#practice').isVisible(), 'The original document remains readable');
+      await ordinary.locator('.section-menu-fallback').click();
+      await ordinary.locator('.section-nav a[href="#practice"]').click();
+      assert(await ordinary.locator('#practice').isVisible(), 'Native fragment navigation exposes the selected panel');
+      await ordinary.locator('.section-menu-fallback').click();
+      await ordinary.locator('.section-home-fallback').click();
     }
     await ordinary.context().close();
   }
-  console.log('PASS: bilingual normal-page fallback fits when navigation or its animation capability is unavailable');
+  console.log('PASS: bilingual native-panel fallback fits when navigation or its animation capability is unavailable');
 
   const reduced = await open({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' }, '#why');
   await active(reduced, 'why');
@@ -973,10 +1075,14 @@ try {
   assert(contactUnclipped, 'The enlarged Contact control remains visible and clickable while the header grows');
   await active(reduced, 'practice');
   const fallback = await open({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
-  assert.equal(await fallback.locator('main > section:visible').count(), 7);
-  assert.equal(await fallback.locator('html.sections-enabled').count(), 0);
-  await fallback.locator('#contact').scrollIntoViewIfNeeded();
+  assert.equal(await fallback.locator('main > section:visible').count(), 1);
+  assert.equal(await fallback.locator('html.sections-enabled:not(.sections-ready)').count(), 1);
+  await fallback.locator('.section-menu-fallback').click();
+  await fallback.locator('.section-nav a[href="#contact"]').click();
   assert(await fallback.locator('#contact').isVisible());
+  await fallback.locator('.section-menu-fallback').click();
+  await fallback.locator('.section-home-fallback').click();
+  assert(await fallback.locator('.hero').isVisible());
   assert.deepEqual(errors, []);
   console.log('PASS: enlarged text, reduced motion, no-JavaScript fallback and zero page errors');
 } finally {

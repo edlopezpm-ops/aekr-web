@@ -45,6 +45,18 @@
           "path": "public/script.js"
         },
         {
+          "id": "microscales",
+          "path": "public/microscales.js"
+        },
+        {
+          "id": "microscales-config",
+          "path": "public/microscales-config.js"
+        },
+        {
+          "id": "startup-layout",
+          "path": "public/startup.css"
+        },
+        {
           "id": "section-navigation",
           "path": "public/sections.js"
         },
@@ -222,25 +234,24 @@
           "path": "public/script.js",
           "kind": "Browser interactions",
           "authority": "implementation",
-          "summary": "Controls the decorative background and contact submission experience.",
+          "summary": "Controls header state and contact submission without decorative rendering.",
           "responsibilities": [
-            "Keep animation decorative.",
-            "Report contact outcomes accessibly."
+            "Report contact outcomes accessibly.",
+            "Preserve entered values and submission lifecycle."
           ],
           "boundaries": [
             "The browser receives no mailbox secret or provider credential."
           ],
           "useWhen": [
-            "Inspect motion behavior or client request handling."
+            "Inspect client request handling."
           ],
           "routes": [
             "public/index.html",
             "src/index.js"
           ],
           "tags": [
-            "canvas",
-            "motion",
-            "contact"
+            "contact",
+            "header"
           ]
         },
         {
@@ -375,6 +386,81 @@
             "security",
             "cache",
             "csp"
+          ]
+        },
+        {
+          "id": "microscales",
+          "path": "public/microscales.js",
+          "authority": "implementation",
+          "summary": "Maintains one bounded decorative source-and-flight renderer, motion preferences and static fallback.",
+          "label": "Microscales",
+          "kind": "Browser presentation",
+          "responsibilities": [
+            "Maintains one bounded decorative source-and-flight renderer, motion preferences and static fallback."
+          ],
+          "boundaries": [
+            "No server, credentials or contact delivery ownership."
+          ],
+          "useWhen": [
+            "Inspect the ivory background or initial layout."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/styles.css"
+          ],
+          "tags": [
+            "presentation",
+            "accessibility"
+          ]
+        },
+        {
+          "id": "microscales-config",
+          "path": "public/microscales-config.js",
+          "authority": "configuration",
+          "summary": "Owns seeded surface geometry, relief, quality and motion parameters.",
+          "label": "Microscales Config",
+          "kind": "Browser presentation",
+          "responsibilities": [
+            "Owns seeded surface geometry, relief, quality and motion parameters."
+          ],
+          "boundaries": [
+            "No server, credentials or contact delivery ownership."
+          ],
+          "useWhen": [
+            "Inspect the ivory background or initial layout."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/styles.css"
+          ],
+          "tags": [
+            "presentation",
+            "accessibility"
+          ]
+        },
+        {
+          "id": "startup-layout",
+          "path": "public/startup.css",
+          "authority": "implementation",
+          "summary": "Preserves first-paint geometry and native fragment navigation without the controller.",
+          "label": "Startup Layout",
+          "kind": "Browser presentation",
+          "responsibilities": [
+            "Preserves first-paint geometry and native fragment navigation without the controller."
+          ],
+          "boundaries": [
+            "No server, credentials or contact delivery ownership."
+          ],
+          "useWhen": [
+            "Inspect the ivory background or initial layout."
+          ],
+          "routes": [
+            "public/index.html",
+            "public/styles.css"
+          ],
+          "tags": [
+            "presentation",
+            "accessibility"
           ]
         }
       ]

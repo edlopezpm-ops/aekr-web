@@ -18,7 +18,7 @@ flowchart TD
 ```
 
 The public site combines content, responsive styles and decorative browser
-interaction. `public/sections.js` coordinates individual views, accessible
+interaction. `public/microscales.js` and `public/microscales-config.js` own the persistent ivory texture and bounded flights. `public/startup.css` supplies the initial layout and native fragment fallback. `public/sections.js` coordinates individual views, accessible
 navigation and history separately from the atmosphere and contact handler.
 `public/i18n.js` owns local English/Spanish selection and notifies the existing
 controllers when copy changes. The Worker owns contact validation and email delivery. Hosting

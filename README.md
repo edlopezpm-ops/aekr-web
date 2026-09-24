@@ -32,6 +32,9 @@ aekr-web/
 ├── public/                  ← served as static assets
 │   ├── index.html
 │   ├── styles.css
+│   ├── startup.css          ← stable first paint and native fragment fallback
+│   ├── microscales-config.js
+│   ├── microscales.js
 │   ├── script.js
 │   ├── sections.js
 │   ├── i18n.js
@@ -75,15 +78,35 @@ Primary AEKR headings reuse the lettering from the official logo through the
 `.brand-lettering` CSS crop. Preserve the artwork's A/E/K/R shapes and mint dot;
 do not substitute a similar font. Accessible AEKR text remains in the markup.
 
-### Nebula source attribution
+### Ivory microtexture
 
-The nebula rendering in `public/script.js` was adapted from Ed's accreatio source
-under his explicit authorization for this website. That portion retains its
-source copyright and reserved rights; the repository's general MIT license does
-not silently relicense accreatio or grant broader reuse rights to its source.
-The current reference is the deployed design-v14 preview at
-`53343211a2176be487c17fa8f58202146f3eac7e`: autonomous currents and left-click gas
-bursts, with the AEKR palette. See [the follow-up verification record](docs/nebula-follow-up-2026-09-04.md).
+The decorative layer is global and independent of the seven panels. Its seeded
+surface uses versioned WebP assets; Canvas 2D draws only reserved source emblems
+and at most six flights (three on narrow viewports). The reduced-motion preference and hidden-tab lifecycle stop its work.
+The background pause button was removed at Ed’s explicit request; the rotating
+introduction retains its existing control.
+
+`public/microscales-config.js` centralizes surface and motion settings. Geometry,
+relief or density changes require rebuilding assets and incrementing their version
+before publication. Run `node tools/visual/build-microscales.mjs` with an existing
+Playwright module path in `PLAYWRIGHT_MODULE` and browser in `BROWSER_EXECUTABLE`.
+The build derives neutral ink/emboss from the official artwork while retaining
+original alpha and chromatic accents. Original PNGs and provenance assets remain
+unchanged. No image-generation model or runtime package is required.
+
+Initial panels and phrase dimensions come from HTML/CSS. Native fragment links
+remain usable without JavaScript or when the section controller fails. A small
+head bootstrap selects an initial deep link before deferred scripts run.
+
+### Archived nebula attribution
+
+The prior starfield and nebula are absent from the active runtime. Their original
+code, tests and assets remain in the verified local design archive, including a
+standalone reuse demo. The accreatio-derived renderer retains its copyright and
+reserved rights; the general MIT license does not relicense it. Historical
+provenance is in [the follow-up record](docs/nebula-follow-up-2026-09-04.md).
+Internal archive, restore instructions and captures are outside `public/` and
+excluded from Git publication. They are local recovery evidence, not a live release.
 
 ## Contact form
 

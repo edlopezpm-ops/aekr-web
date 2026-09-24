@@ -1,9 +1,59 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** FROZEN — fase web cerrada por Ed el 2026-09-06; release público `ec21286`. Estado, evidencia y próxima fase: [informe de freeze](FREEZE-2026-09-06.md).
+**Status:** Visual increment reopened by Ed on 2026-09-23 (local date): ivory microtexture, recoverable archive and local preview. Local preview approved by Ed; Git delivery and live verification in progress. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Ivory microtexture increment — 2026-09-24 UTC
+
+Ed instructed implementation of the root microtexture brief in full. This reopens
+only its visual, startup, archive and verification scope; historical deploy
+permissions do not authorize publication. Existing local README, guide and browser
+fixture changes were preserved in the original snapshot before edits.
+
+The static stack remains sufficient: one precomposed seeded surface plus a
+bounded Canvas 2D flight layer replaces the two prior atmosphere engines. The
+existing contact, language and navigation responsibilities remain. HTML/CSS own
+the initial panel/phrase geometry; native hash navigation works before or without
+the controller. The Worker, email contract and hosting configuration are unchanged.
+Ed subsequently requested removal of the new background pause button; it is
+removed. Reduced-motion and hidden-tab scheduling controls remain.
+
+Recovery and task evidence are local under the internal `.aekr` directory, outside
+publication. The original source archive includes base commit, local patch,
+checksums and a verified Git bundle; a separate dark-design extraction preserves
+accreatio attribution and provides an executable demo. The approved reference
+PNG was not supplied in the checkout; exact image matching is not claimed.
+
+Verification: repository checks, three-way map parity and the full existing
+browser suite pass locally. The suite covers initial cold/warm/delayed/reduced
+layout, all panels, history, gestures, focus, 200% text, translations and mocked
+contact outcomes. After Ed removed the background pause button, focused startup
+and dynamic preference tests passed again; the complete lifecycle simulation
+retains hidden-tab and reduced-motion scheduling coverage. Separate-author
+review verified renderer failure paths, exact original alpha/dimensions in all
+three brand derivatives, 3.23:1 field borders and 3.55:1 inactive navigation.
+Restored original checks and standalone dark demo startup pass. Exact PNG matching and physical devices remain unverified. The implementation
+stage introduced no runtime dependency or Worker/hosting configuration change.
+Production evidence is established separately by the delivery step below.
+
+### Human acceptance and delivery — 2026-09-24 UTC
+
+Ed reviewed the local preview, requested removal of the background pause button,
+and then stated: “me parece que está bien, procede con lo que sigue”. This records
+acceptance of the implemented preview and authorizes continuation through the
+normal Git/PR delivery and existing Workers Builds publication path. It does not
+claim exact comparison with the absent PNG or reopen unrelated project work.
+
+The remote master was refreshed and still matched the implementation base.
+Reviewed implementation hashes remained unchanged. The previously uncommitted
+September closure documentation and footer test correction are preserved in a
+separate historical closure commit; the visual implementation follows it.
+The verified original snapshot and Git bundle remain available locally. Delivery
+requires checks for the exact PR/merged revision and live asset readback; a PR or
+successful build alone is insufficient. No infrastructure, credentials, service
+identities or external kommiBo behavior are changed by this delivery.
 
 ## Website closure and external integration boundary — 2026-09-06
 
