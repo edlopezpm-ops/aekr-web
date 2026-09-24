@@ -3,15 +3,16 @@
 (() => {
   'use strict';
   const config = Object.freeze({
-    version: 'v2', seed: 0xAE2026, width: 1600, height: 1000,
+    version: 'v3', seed: 0xAE2026, width: 1600, height: 1000,
     mobileWidth: 600, mobileSize: 0.85, mobileOpacity: 0.85,
-    count: 7200, size: [26, 43], relief: 0.70, surfaceOpacity: 0.65, eligible: 128,
-    maxDesktop: 64, maxMobile: 44, mobileBreakpoint: 768, flightSize: 0.8,
-    duration: [14000, 22000], emission: [90, 180], firstEmission: 120,
+    count: 7200, size: [26, 43], relief: 0.70, surfaceOpacity: 0.65,
+    maxDesktop: 96, maxMobile: 66, mobileBreakpoint: 768, flightSize: 0.8,
+    duration: [14000, 22000], emission: [60, 120], firstEmission: 120,
     fadeStart: 0.52, fadeExponent: 1.15,
     speed: [38, 72], sway: [-36, 58], gustInterval: [900, 2600],
     fps: 30, maxDpr: 1.5, maxPixels: 2400000,
-    surfaceAmplitude: 0.65, surfacePeriod: 21000,
+    surfaceTravel: [2, 5], surfaceCycle: [14000, 26000], surfaceSway: [0.6, 1.6],
+    surfaceGustInterval: [2400, 6800],
   });
   function random(seed = config.seed) {
     let state = seed >>> 0;
@@ -36,7 +37,6 @@
     });
   }
   const points = distribution();
-  const candidates = points.filter(p => p.alpha > 0.40 && p.x < 1540 && p.y > 60 && p.y < 960);
-  const sources = Array.from({ length: config.eligible }, (_, i) => candidates[Math.floor(i * candidates.length / config.eligible)]);
+  const sources = points.filter(p => p.alpha > 0);
   globalThis.AEKRMicroscales = Object.freeze({ config, random, points, sources });
 })();

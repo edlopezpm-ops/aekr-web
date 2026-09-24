@@ -86,9 +86,9 @@ body {
   background: radial-gradient(ellipse at 12% 10%, #fffdf7 0, transparent 65%), var(--bg);
 }
 .atmosphere__surface {
-  background: url("assets/aekr-microscales-surface-v2.webp") right center / cover no-repeat;
-  transform: translateX(var(--surface-drift, 0px));
+  background: url("assets/aekr-microscales-surface-v3.webp") right center / cover no-repeat;
 }
+.atmosphere[data-renderer="canvas2d"] .atmosphere__surface { visibility: hidden; }
 .atmosphere::after {
   content: "";
   position: absolute;
@@ -99,7 +99,7 @@ body {
 .atmosphere__scales { z-index: 1; }
 .atmosphere__scales[hidden] { display: none; }
 @media (max-width: 767px) {
-  .atmosphere__surface { background-image: url("assets/aekr-microscales-mobile-v2.webp"); }
+  .atmosphere__surface { background-image: url("assets/aekr-microscales-mobile-v3.webp"); }
 }
 
 .site-header,
