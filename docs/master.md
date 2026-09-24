@@ -55,6 +55,38 @@ requires checks for the exact PR/merged revision and live asset readback; a PR o
 successful build alone is insufficient. No infrastructure, credentials, service
 identities or external kommiBo behavior are changed by this delivery.
 
+### Unified dark olive correction — 2026-09-24 UTC
+
+PR #14 merged as `a127ca49a6d1291d105edf1d4e7c3de0e0cc32e8`; GitHub validation
+and the existing Workers Builds deployment succeeded. During delivery Ed asked
+that the logo, the A in AEKR, buttons and green text use the same dark olive.
+This correction continues the authorized delivery, using the existing button
+accent `#214d3a` as the single source rather than selecting another palette.
+
+Before implementation, inspection identified preserved mint pixels in the offline
+asset generator, a second CSS text accent, mixed hover fills and footer opacity.
+The minimum sufficient change extends the existing CSS/generator boundary:
+the generator reads `--accent`, the dim accent aliases it, and solid button hover
+fills and brand opacity preserve that color. No library, runtime config or new
+abstraction is needed. Three version-2 brand derivatives preserve dimensions,
+shape and neutral alpha. Review found that original green fill peaks at alpha
+228/255 in mark/logo and 254/255 in the banner, making identical RGB look lighter.
+Ed's identical-color correction therefore also normalizes chromatic alpha to an
+opaque peak, keeping proportional edge coverage. This explicitly supersedes exact
+chromatic alpha preservation for the new derivatives; original PNGs remain intact.
+Decorative transparency and antialiasing still composite naturally against paper.
+Background textures, renderer, navigation, contact, Worker and hosting are outside
+this correction. Verification targets pixel colors/alpha, computed desktop/mobile
+colors and contrast, repository/map checks, then exact published asset readback.
+
+Local verification passed: repository/map checks and the desktop/mobile navigation,
+language, mocked contact and reduced-motion smoke. Separate-author source-PNG
+decoding confirms exact opaque `33,77,58` pixels in all three derivatives, unchanged
+silhouette support, expected normalized green coverage and unchanged neutral alpha.
+Computed button/hover and text colors agree; contrast is 8.59:1 on ivory and 9.43:1
+for the button label. Original artwork and background assets are byte-identical.
+These local checks do not substitute for the final deployed revision/readback.
+
 ## Website closure and external integration boundary — 2026-09-06
 
 La instrucción posterior de Ed cierra esta fase y congela aekr-web. La consulta
