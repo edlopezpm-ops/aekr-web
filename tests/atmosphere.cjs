@@ -16,14 +16,17 @@ function setup(options = {}) {
   };
   let now = 0, id = 0, drawCount = 0, imageCount = 0;
   let width = options.width || 1440, height = options.height || 1000;
-  let drawing = [], position, angle, throwDrawing = false;
+  let drawing = [], position, angle, projection, throwDrawing = false;
   const context = {
     globalAlpha: 1,
-    setTransform() {}, clearRect() { drawing = []; drawCount++; }, save() {}, restore() {},
-    translate(x, y) { position = [x, y]; }, rotate(value) { angle = value; },
-    drawImage(_sprite, _x, _y, size) {
+    setTransform() {}, clearRect() { drawing = []; drawCount++; },
+    save() { projection = [1, 0, 0, 1, 0, 0]; }, restore() {},
+    translate(x, y) { position = [x, y]; }, rotate(value) { angle = value; }, scale() {},
+    transform(...values) { projection = values; },
+    drawImage(_sprite, ...args) {
       if (throwDrawing) throw new Error('Canvas unavailable');
-      drawing.push({ position: [...position], angle, size, alpha: this.globalAlpha });
+      const size = args.length === 4 ? args[2] : args[6];
+      drawing.push({ position: [...position], angle, size, alpha: this.globalAlpha, projection });
     },
   };
   const canvas = { hidden: false, addEventListener: add('canvas'), getContext: () => options.noContext ? null : context };
@@ -42,7 +45,7 @@ function setup(options = {}) {
   const scope = vm.createContext(sandbox);
   vm.runInContext(configSource, scope);
   vm.runInContext(rendererSource, scope);
-  const emit = (target, name) => { for (const fn of events.get(`${target}:${name}`) || []) fn(); };
+  const emit = (target, name, event) => { for (const fn of events.get(`${target}:${name}`) || []) fn(event); };
   return { root, canvas, properties, callbacks, events, model: sandbox.AEKRMicroscales,
     draws: () => drawing, drawCount: () => drawCount, imageCount: () => imageCount,
     load: () => image.onload(), imageFail: () => image.onerror(),
@@ -97,7 +100,7 @@ assert.equal(airborne.position[0], original.position[0] + parseFloat(transfer.pr
 assert.equal(airborne.size, original.size);
 assert.equal(airborne.alpha, original.alpha);
 assert.equal(transfer.draws().filter(item => item.angle === airborne.angle).length, 1);
-transfer.advance(1000);
+transfer.advance(80);
 assert.ok(transfer.draws().at(-1).position[0] < airborne.position[0], 'flight advances left');
 assert.equal(transfer.draws().length, origins.length, 'origin remains absent during early detachment');
 let regrown;
@@ -108,9 +111,50 @@ for (let elapsed = 0; elapsed < 14000 && !regrown; elapsed += 40) {
 assert.ok(regrown, 'vacated source regrows during the trajectory');
 const departing = transfer.draws().find(item => item.size === original.size && item.angle !== original.angle);
 assert.ok(departing);
-assert.ok(regrown.position[0] - departing.position[0] >= original.size - transfer.model.config.surfaceAmplitude * 2,
+assert.ok(Math.hypot(regrown.position[0] - departing.position[0], regrown.position[1] - departing.position[1]) >= original.size - transfer.model.config.surfaceAmplitude * 2,
   'regrowth starts only after flight clears a full emblem width, allowing bounded surface drift');
 console.log('PASS source-to-flight transfer without duplicate, preserved emblem and leftward movement');
+
+// A live RAF and a nonzero pool did not make the former animation perceptible:
+// symbols barely travelled before fading. Verify a useful visible journey.
+const visible = setup(); visible.load();
+while (visible.root.dataset.particles === '0') visible.advance(40);
+const launched = visible.draws().at(-1);
+visible.advance(4000);
+const travelled = visible.draws().find(item => item.size === launched.size && item.angle !== launched.angle);
+assert.ok(travelled, 'first detached emblem remains visible after four seconds');
+assert.ok(launched.position[0] - travelled.position[0] > 100, 'visible flight crosses at least 100 CSS pixels');
+assert.ok(travelled.alpha >= launched.alpha * 0.85, 'flight retains relief before dissolving');
+assert.ok(Math.abs(travelled.position[1] - launched.position[1]) > 3, 'petal moves vertically as well as left');
+assert.notDeepEqual(travelled.projection, launched.projection, 'petal tumbles in depth on independent axes');
+const airbornePoses = visible.draws().filter(item => item.projection[0] !== 1);
+assert.ok(new Set(airbornePoses.map(item => item.projection.join(','))).size > 4, 'petals do not share a rigid common orientation');
+
+const breeze = setup(), passive = setup(); breeze.load(); passive.load();
+const target = breeze.draws().find(item => item.position[0] > 800 && item.position[0] < 1400);
+breeze.emit('window', 'pointermove', { clientX: target.position[0], clientY: target.position[1], pointerType: 'mouse' });
+breeze.advance(80); passive.advance(80);
+assert.equal(breeze.root.dataset.particles, '1', 'pointer lifts a nearby source before the next autonomous emission');
+assert.equal(passive.root.dataset.particles, '0');
+const pointed = breeze.draws().at(-1);
+assert.equal(pointed.angle, target.angle, 'the touched source supplies the new flight');
+for (let i = 0; i < 100; i++) breeze.emit('window', 'pointermove', { clientX: target.position[0], clientY: target.position[1], pointerType: 'mouse' });
+breeze.advance(80); assert.equal(breeze.root.dataset.particles, '1', 'pointer input is rate bounded');
+breeze.reduced(true);
+breeze.emit('window', 'pointermove', { clientX: target.position[0], clientY: target.position[1], pointerType: 'mouse' });
+breeze.advance(2000); assert.ok(Number(breeze.root.dataset.particles) > 0);
+console.log('PASS visible multi-axis petal travel, source rebirth and bounded pointer detachment');
+
+const edgePointer = setup({ width: 1366, height: 600 }); edgePointer.load();
+const marginalSource = edgePointer.draws().find(item => item.position[1] > 580 && item.position[0] < 1351);
+assert.ok(marginalSource);
+edgePointer.emit('window', 'pointermove', { clientX: marginalSource.position[0], clientY: marginalSource.position[1], pointerType: 'mouse' });
+edgePointer.advance(80);
+if (edgePointer.root.dataset.particles !== '0') {
+  const nearby = edgePointer.draws().at(-1);
+  assert.ok(Math.hypot(nearby.position[0] - marginalSource.position[0], nearby.position[1] - marginalSource.position[1]) <= 110,
+    'pointer near an ineligible edge source never launches a random distant emblem');
+}
 
 for (const options of [{}, { width: 390, height: 844, dpr: 3 }]) {
   const env = setup(options); env.load();
@@ -127,7 +171,7 @@ for (const options of [{}, { width: 390, height: 844, dpr: 3 }]) {
     previous = active;
   }
   assert.ok(maxParticles > 0 && departures > 0, 'particles emit and expire over a three-minute run');
-  assert.ok(maxDraws <= config.eligible + cap, 'per-frame draw work is bounded');
+  assert.ok(maxDraws <= config.eligible + cap * 4, 'per-frame draw work includes at most four dissolving fragments per flight');
   assert.ok(env.canvas.width <= (options.width || 1440) * config.maxDpr);
   console.log(`PASS ${options.width ? 'mobile' : 'desktop'} three-minute lifecycle: maximum ${maxParticles}/${cap} flights, ${maxDraws} sprite draws`);
 }
@@ -146,14 +190,13 @@ pause.emit('document', 'aekr:languagechange'); pause.emit('window', 'hashchange'
 assert.equal(comparable(pause), beforeLocale);
 assert.equal(pause.callbacks.size, 1);
 pause.reduced(true);
-assert.equal(pause.callbacks.size, 0); assert.equal(pause.root.dataset.particles, '0');
-assert.equal(pause.draws().length, pause.model.sources.length);
-const reducedDraws = pause.drawCount(); pause.advance(60000); assert.equal(pause.drawCount(), reducedDraws);
+assert.equal(pause.callbacks.size, 1);
+const reducedDraws = pause.drawCount(); pause.advance(2000); assert.ok(pause.drawCount() > reducedDraws);
 pause.reduced(false); assert.equal(pause.callbacks.size, 1);
-for (const options of [{ reduced: true }, { hidden: true }]) {
-  const env = setup(options); env.load(); assert.equal(env.callbacks.size, 0); assert.equal(env.root.dataset.particles, '0');
-}
-console.log('PASS hidden/reduced pause, resume continuity, no catch-up and locale/history isolation');
+const preference = setup({ reduced: true }); preference.load(); preference.advance(3000);
+assert.ok(Number(preference.root.dataset.particles) > 0, 'owner-requested animation remains active for every motion preference');
+const hidden = setup({ hidden: true }); hidden.load(); assert.equal(hidden.callbacks.size, 0); assert.equal(hidden.root.dataset.particles, '0');
+console.log('PASS hidden-tab suspension/resume, no catch-up, preference-independent animation and locale/history isolation');
 
 const resizing = setup({ width: 5000, height: 3000, dpr: 3 }); resizing.load();
 // Rounding either dimension may add less than one row/column to the pixel budget.
@@ -161,11 +204,11 @@ assert.ok(resizing.canvas.width * resizing.canvas.height <= resizing.model.confi
 resizing.advance(16000); resizing.resize(390, 844);
 assert.ok(Number(resizing.root.dataset.particles) <= resizing.model.config.maxMobile);
 assert.equal(resizing.callbacks.size, 1); assert.equal(resizing.imageCount(), 1);
-for (const failure of ['noContext', 'image', 'draw', 'reducedDraw', 'lost']) {
+for (const failure of ['noContext', 'image', 'draw', 'resizeDraw', 'lost']) {
   const env = setup({ noContext: failure === 'noContext' });
   if (failure === 'image') env.imageFail(); else env.load();
   if (failure === 'draw') { env.failDraw(); env.advance(80); }
-  if (failure === 'reducedDraw') { env.failDraw(); env.reduced(true); }
+  if (failure === 'resizeDraw') { env.failDraw(); env.resize(800, 600); }
   if (failure === 'lost') env.emit('canvas', 'contextlost');
   assert.equal(env.root.dataset.renderer, 'static'); assert.equal(env.canvas.hidden, true);
   assert.equal(env.callbacks.size, 0);

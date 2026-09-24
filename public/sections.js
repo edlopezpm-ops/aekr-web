@@ -17,7 +17,6 @@
   if (!main || !header || !footer || !menuToggle || !status || !heroMark || !dock || panels.length !== 7 || links.length !== 6) return;
   if (typeof ResizeObserver !== 'function' || !('inert' in HTMLElement.prototype) || !Element.prototype.animate) return;
 
-  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const compact = window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1024px) and (max-height: 560px)');
   let isCompact = compact.matches;
   const editable = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
@@ -129,7 +128,7 @@
   }
 
   function animateChange(outgoing, incoming, outgoingStart, markStart, headerStart, direction) {
-    const duration = 1500;
+    const duration = 1800;
     const easing = 'cubic-bezier(0.22, 0.75, 0.2, 1)';
     const travelEasing = 'cubic-bezier(0.4, 0, 0.2, 1)';
     const target = current === 0 ? heroMark.getBoundingClientRect() : dock.getBoundingClientRect();
@@ -140,13 +139,12 @@
     outgoing.classList.add('is-leaving');
     animations.push(outgoing.animate([
       outgoingStart,
-      { opacity: 0, filter: 'blur(3px)', transform: `translateY(${-direction * 8}px)` }
-    ], { duration: 460, easing, fill: 'forwards' }));
+      { opacity: 0, filter: 'blur(2px)', transform: `translateY(${-direction * 5}px)` }
+    ], { duration: 600, easing, fill: 'forwards' }));
     animations.push(incoming.animate([
-      { opacity: 0, filter: 'blur(3px)', transform: `translateY(${direction * 8}px)` },
-      { opacity: 1, filter: 'blur(0px)', transform: `translateY(${-direction * 1.5}px)`, offset: .85 },
+      { opacity: 0, filter: 'blur(2px)', transform: `translateY(${direction * 5}px)` },
       { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0px)' }
-    ], { delay: 460, duration: 820, easing, fill: 'both' }));
+    ], { delay: 600, duration: 1100, easing, fill: 'both' }));
     heroMark.classList.add('hero-mark--traveling');
     traveler.hidden = false;
     placeTraveler(target);
@@ -210,7 +208,7 @@
     if (!initial) {
       announce();
     }
-    if (changed && !initial && !motion.matches) animateChange(outgoing, incoming, outgoingStart, markStart, headerStart, direction);
+    if (changed && !initial) animateChange(outgoing, incoming, outgoingStart, markStart, headerStart, direction);
     else settleMotion();
     return changed;
   }
@@ -249,7 +247,6 @@
   window.addEventListener('resize', settleMotion, { passive: true });
   window.visualViewport?.addEventListener('resize', settleMotion, { passive: true });
   window.visualViewport?.addEventListener('scroll', measureViewport, { passive: true });
-  motion.addEventListener('change', settleMotion);
   document.addEventListener('visibilitychange', () => { if (document.hidden) settleMotion(); });
   document.addEventListener('aekr:languagechange', () => {
     panels[0].setAttribute('aria-label', text('AEKR introduction'));
@@ -380,7 +377,7 @@
 })();
 
 /* Hero storytelling shares selected-view state; it never drives navigation.
-   Whole phrases use one browser animation, followed by a stationary three-second
+   Whole phrases use one browser animation, followed by a stationary 7.5-second
    reading interval. The original prose remains the accessible/static fallback. */
 (() => {
   'use strict';
@@ -388,7 +385,6 @@
   const lede = document.querySelector('.hero .hero-lede');
   if (!lede || !window.IntersectionObserver || !window.ResizeObserver || !Element.prototype.animate) return;
   const text = value => window.AEKRLanguage?.text(value) || value;
-  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const phrases = [
     'An AI-native, human-orchestrated engineering practice.',
     'Humans orchestrate. Machines execute.',
@@ -401,17 +397,13 @@
   const story = document.querySelector('.hero-story');
   const lines = story?.querySelector('.hero-phrases');
   const spans = Array.from(lines?.querySelectorAll('.hero-phrase') || []);
-  const pause = story?.querySelector('.hero-pause');
-  if (!story || !lines || !pause || spans.length !== phrases.length) return;
+  if (!story || !lines || spans.length !== phrases.length) return;
   spans.forEach((span, i) => { span.textContent = text(phrases[i]); });
   story.classList.add('story-ready');
-  pause.setAttribute('aria-label', text('Pause rotating introduction'));
-  pause.setAttribute('aria-pressed', 'false');
-
-  let index = 0, userPaused = false, inView = false;
+  let index = 0, inView = false;
   let animation = null, timer = 0;
   let layoutWidth = lines.clientWidth, layoutHeight = lines.clientHeight;
-  const canRun = () => !motion.matches && !userPaused && !document.hidden && inView &&
+  const canRun = () => !document.hidden && inView &&
     (!main.dataset.activeSection || main.dataset.activeSection === 'main') &&
     !main.hasAttribute('data-transitioning');
 
@@ -434,7 +426,7 @@
       timer = 0;
       if (canRun()) animate('leaving');
       else sync();
-    }, 3000);
+    }, 7500);
   }
 
   function animate(phase) {
@@ -448,8 +440,8 @@
       { opacity: 1, transform: 'translateY(0px)' },
       { opacity: 0, transform: 'translateY(-2px)' }
     ], {
-      duration: entering ? 400 : 240,
-      easing: entering ? 'cubic-bezier(0, 0, .38, .9)' : 'cubic-bezier(.2, 0, 1, .9)',
+      duration: 1200,
+      easing: 'cubic-bezier(.4, 0, .2, 1)',
       fill: 'both',
     });
     animation = run;
@@ -467,12 +459,9 @@
   }
 
   function sync() {
-    story.hidden = motion.matches;
-    lede.classList.toggle('visually-hidden', !motion.matches);
     if (!canRun()) {
       stopWork();
-      readable(motion.matches ? 'fallback' : 'paused');
-      if (motion.matches && story.contains(document.activeElement)) main.querySelector('.hero').focus({ preventScroll: true });
+      readable('paused');
       return;
     }
     if (!animation && !timer) dwell();
@@ -484,12 +473,6 @@
     sync();
   }
 
-  pause.addEventListener('click', () => {
-    userPaused = !userPaused;
-    pause.setAttribute('aria-pressed', String(userPaused));
-    pause.setAttribute('aria-label', text(userPaused ? 'Resume rotating introduction' : 'Pause rotating introduction'));
-    sync();
-  });
   new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }).observe(story);
   new MutationObserver(sync).observe(main, { attributes: true, attributeFilter: ['data-active-section', 'data-transitioning'] });
   new ResizeObserver(() => {
@@ -502,11 +485,9 @@
   document.fonts?.addEventListener('loadingdone', reset);
   document.addEventListener('aekr:languagechange', () => {
     spans.forEach((span, i) => { span.textContent = text(phrases[i]); });
-    pause.setAttribute('aria-label', text(userPaused ? 'Resume rotating introduction' : 'Pause rotating introduction'));
     reset();
   });
   document.addEventListener('visibilitychange', sync);
-  motion.addEventListener('change', sync);
   readable('paused');
   sync();
 })();

@@ -81,19 +81,28 @@ do not substitute a similar font. Accessible AEKR text remains in the markup.
 ### Ivory microtexture
 
 The decorative layer is global and independent of the seven panels. Its seeded
-surface uses versioned WebP assets; Canvas 2D draws only reserved source emblems
-and at most six flights (three on narrow viewports). The reduced-motion preference and hidden-tab lifecycle stop its work.
-The background pause button was removed at Ed’s explicit request; the rotating
-introduction retains its existing control.
+surface uses versioned WebP assets concentrated diagonally on the right and lower
+edge. Canvas 2D lifts reserved AEKR emblems into a right-to-left breeze, with
+independent three-axis tumbling, depth, changing gusts and a four-piece dissolution
+late in each flight. At most 64 emblems fly at once (44 on narrow viewports),
+settling to 80% of their source size as they lift into the breeze.
+Each vacated source regrows after its petal clears the surface. Moving the pointer
+near the textured field adds a bounded gust; touch gestures retain their navigation
+behavior. Hidden tabs suspend work and resume without accumulated emissions.
+Ed explicitly requested continuous visible animation regardless of the system's
+motion preference, and removal of the introduction pause control. Phrases remain
+readable for 7.5 seconds with 1.2-second fades; panel transitions last 1.8 seconds.
 
 `public/microscales-config.js` centralizes surface and motion settings. Geometry,
 relief or density changes require rebuilding assets and incrementing their version
-before publication. Run `node tools/visual/build-microscales.mjs` with an existing
+before publication. Run `node tools/visual/build-microscales.mjs --surface-only` with an existing
 Playwright module path in `PLAYWRIGHT_MODULE` and browser in `BROWSER_EXECUTABLE`.
-The build derives neutral ink/emboss from the official artwork. Brand derivatives
+The surface-only build leaves brand derivatives untouched; omit that option only
+when intentionally rebuilding the brand assets too. The build derives neutral
+ink/emboss from the official artwork. Brand derivatives
 retain geometry and neutral alpha, and normalize green coverage to an opaque fill
 with proportional antialiased edges so original translucency cannot lighten it.
-They use the CSS `--accent` dark olive (#214d3a),
+They use the CSS `--accent` olive (#2b5b43),
 matching buttons and green text, including hover. Accent changes require rebuilding
 and versioning the three brand PNGs. Original PNGs and provenance assets remain
 unchanged. No image-generation model or runtime package is required.
@@ -101,6 +110,10 @@ unchanged. No image-generation model or runtime package is required.
 Initial panels and phrase dimensions come from HTML/CSS. Native fragment links
 remain usable without JavaScript or when the section controller fails. A small
 head bootstrap selects an initial deep link before deferred scripts run.
+Panels center their content when it fits. Desktop Contact places the introduction
+beside the form; narrow screens and enlarged text retain accessible scrolling.
+The small attribution banner sits in the lower-right corner, with copyright in
+the lower-left, outside the content area.
 
 ### Archived nebula attribution
 
