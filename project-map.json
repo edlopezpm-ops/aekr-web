@@ -4,7 +4,7 @@
     "name": "aekr-web",
     "alias": null,
     "schemaVersion": 2,
-    "lastUpdated": "2026-09-05",
+    "lastUpdated": "2026-09-24",
     "root": {
       "id": "project-root",
       "path": "README.md",
@@ -33,7 +33,25 @@
           "id": "browser-script",
           "path": "public/script.js",
           "authority": "implementation",
-          "summary": "Controls the decorative background and contact submission experience."
+          "summary": "Controls header state and contact submission without decorative rendering."
+        },
+        {
+          "id": "microscales",
+          "path": "public/microscales.js",
+          "authority": "implementation",
+          "summary": "Maintains one bounded decorative source-and-flight renderer, motion preferences and static fallback."
+        },
+        {
+          "id": "microscales-config",
+          "path": "public/microscales-config.js",
+          "authority": "configuration",
+          "summary": "Owns seeded surface geometry, relief, quality and motion parameters."
+        },
+        {
+          "id": "startup-layout",
+          "path": "public/startup.css",
+          "authority": "implementation",
+          "summary": "Preserves first-paint geometry and native fragment navigation without the controller."
         },
         {
           "id": "section-navigation",

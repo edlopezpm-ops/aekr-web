@@ -156,7 +156,7 @@
   const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const node = walker.currentNode;
-    if (node.parentElement?.closest('script, style, noscript, textarea, .hero-story, .section-status, .form-status, .language-control')) continue;
+    if (node.parentElement?.closest('script, style, noscript, textarea, .section-status, .form-status, .language-control')) continue;
     const key = normalize(node.data);
     const translated = fragments.get(node) ?? spanish.get(key);
     if (translated !== undefined) {

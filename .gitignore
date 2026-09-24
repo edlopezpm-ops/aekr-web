@@ -12,3 +12,8 @@ Aug-24 Change - *.md
 
 # Local visual QA scratch output
 .qa-*.png
+
+# Local task brief, recoverable design archives and private verification evidence.
+# The user-provided brief remains unchanged on disk; none is website source.
+.aekr/
+AEKR_MASTER_PROMPT_FONDO_MICROESCAMAS.md

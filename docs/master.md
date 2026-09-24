@@ -1,9 +1,115 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; restrained phrase transitions and EN/SP toggle refinement.
+**Status:** Visual increment reopened by Ed on 2026-09-23 (local date): ivory microtexture, recoverable archive and local preview. Local preview approved by Ed; Git delivery and live verification in progress. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Ivory microtexture increment — 2026-09-24 UTC
+
+Ed instructed implementation of the root microtexture brief in full. This reopens
+only its visual, startup, archive and verification scope; historical deploy
+permissions do not authorize publication. Existing local README, guide and browser
+fixture changes were preserved in the original snapshot before edits.
+
+The static stack remains sufficient: one precomposed seeded surface plus a
+bounded Canvas 2D flight layer replaces the two prior atmosphere engines. The
+existing contact, language and navigation responsibilities remain. HTML/CSS own
+the initial panel/phrase geometry; native hash navigation works before or without
+the controller. The Worker, email contract and hosting configuration are unchanged.
+Ed subsequently requested removal of the new background pause button; it is
+removed. Reduced-motion and hidden-tab scheduling controls remain.
+
+Recovery and task evidence are local under the internal `.aekr` directory, outside
+publication. The original source archive includes base commit, local patch,
+checksums and a verified Git bundle; a separate dark-design extraction preserves
+accreatio attribution and provides an executable demo. The approved reference
+PNG was not supplied in the checkout; exact image matching is not claimed.
+
+Verification: repository checks, three-way map parity and the full existing
+browser suite pass locally. The suite covers initial cold/warm/delayed/reduced
+layout, all panels, history, gestures, focus, 200% text, translations and mocked
+contact outcomes. After Ed removed the background pause button, focused startup
+and dynamic preference tests passed again; the complete lifecycle simulation
+retains hidden-tab and reduced-motion scheduling coverage. Separate-author
+review verified renderer failure paths, exact original alpha/dimensions in all
+three brand derivatives, 3.23:1 field borders and 3.55:1 inactive navigation.
+Restored original checks and standalone dark demo startup pass. Exact PNG matching and physical devices remain unverified. The implementation
+stage introduced no runtime dependency or Worker/hosting configuration change.
+Production evidence is established separately by the delivery step below.
+
+### Human acceptance and delivery — 2026-09-24 UTC
+
+Ed reviewed the local preview, requested removal of the background pause button,
+and then stated: “me parece que está bien, procede con lo que sigue”. This records
+acceptance of the implemented preview and authorizes continuation through the
+normal Git/PR delivery and existing Workers Builds publication path. It does not
+claim exact comparison with the absent PNG or reopen unrelated project work.
+
+The remote master was refreshed and still matched the implementation base.
+Reviewed implementation hashes remained unchanged. The previously uncommitted
+September closure documentation and footer test correction are preserved in a
+separate historical closure commit; the visual implementation follows it.
+The verified original snapshot and Git bundle remain available locally. Delivery
+requires checks for the exact PR/merged revision and live asset readback; a PR or
+successful build alone is insufficient. No infrastructure, credentials, service
+identities or external kommiBo behavior are changed by this delivery.
+
+## Website closure and external integration boundary — 2026-09-06
+
+La instrucción posterior de Ed cierra esta fase y congela aekr-web. La consulta
+de autenticación correspondía a accreatio, otro proyecto. El informe de freeze
+anteriormente enlazado prevalece para el estado del corte; los registros que
+siguen conservan su fecha y alcance. Los pendientes se trasladan a una próxima
+fase no iniciada. Reabrir requiere una instrucción explícita del propietario.
+
+Ed confirmed that movement is resolved and requested completion of the remaining
+website work. Current inspection found no outstanding functional change in the
+declared quiet-motion increment. Local HEAD and the remote master both resolve
+to `ec2128639bb85384467d77d40202e940e2a94dcc`, the merged PR #13 release.
+The exact merge commit has successful GitHub validation and Cloudflare Workers
+Builds checks. HTTP readback of the homepage, stylesheet, section controller,
+translation script, atmosphere/contact script and 404 document matches local
+release bytes; an unknown URL returns HTTP 404. The connected Brave tab also
+shows the released site and EN/SP control. This closes the previously open
+merged-source and live-asset readback for that increment.
+
+The planned remaining change was documentation only: reuse this operating guide for the
+closure and scope boundary, and correct the README's script inventory. No new
+document system, dependency, runtime behavior, interface, configuration or
+Project Map component is needed. Movement, accessibility preferences, artwork,
+contact behavior, Worker and hosting are excluded from this change. Historical
+records below retain their original scope and verification limitations.
+
+Closure verification exposed a browser-fixture race, not a phrase-animation
+change: before the lazy footer banner decodes, its declared aspect ratio places
+the hero at 610.140625 px; after decode, the natural ratio moves it to
+610.296875 px. A delayed-image reproduction confirmed both samples remained
+in the reading phase. The minimal test-only correction waits for banner decode
+and the existing footer-height observer before sampling. Exact stationary-line
+assertions remain unchanged; no production source or asset is modified.
+
+Validation result: `npm run check`, the complete `npm run check:browser` and
+`git diff --check` passed. The browser suite used local static assets in Brave,
+with intercepted email requests and zero page errors. A separate author reviewed
+the closure text and implemented the fixture correction; the orchestrator
+reviewed that test diff. This is shared-context review, not an independent Audit.
+The closure inventory is README +4/-2, this guide +51/-1 and browser tests +6/-0;
+there is no runtime complexity or public-contract delta. These closure changes
+are local worktree changes, separate from the already verified live release.
+
+**External work in progress (owner report, not deployment evidence):** another
+session is integrating the kommiBo console into the website, with intended
+access at `https://aekr.io/kommibo`. The kommiBo repository owns that work and its
+implementation details. This website-closure task records the coordination
+boundary only; it does not implement the console, routes, authentication,
+bindings, credentials or infrastructure. Availability and acceptance of that
+integration require evidence from its owning session.
+
+Real email inbox receipt remains unverified; browser tests intercept submissions.
+Account billing, deployment-control configuration and durable abuse protection
+retain the separate evidence boundaries below. These are not newly authorized
+implementation tasks or evidence that the visual release failed.
 
 ## Quiet motion and EN/SP toggle — 2026-09-05
 
