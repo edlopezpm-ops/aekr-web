@@ -20,7 +20,7 @@ html:not(.sections-ready):is([data-initial-panel], :has(main > .section:target, 
 
 html:not(.sections-ready):is([data-initial-panel], :has(main > .section:target, main > .section :target)) .brand-dock {
   visibility: visible;
-  background: url('assets/aekr-mark-ivory-v1.png') center / contain no-repeat;
+  background: url('assets/aekr-mark-ivory-v2.png') center / contain no-repeat;
 }
 
 html:not(.sections-ready):not([data-initial-panel]):not(:has(main > section:target, main > section :target)) .hero,

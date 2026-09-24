@@ -75,7 +75,7 @@ If you replace them, keep the transparency — do not re-export onto a solid
 background.
 
 Primary AEKR headings reuse the lettering from the official logo through the
-`.brand-lettering` CSS crop. Preserve the artwork's A/E/K/R shapes and mint dot;
+`.brand-lettering` CSS crop. Preserve the artwork's A/E/K/R shapes and dot;
 do not substitute a similar font. Accessible AEKR text remains in the markup.
 
 ### Ivory microtexture
@@ -90,8 +90,12 @@ introduction retains its existing control.
 relief or density changes require rebuilding assets and incrementing their version
 before publication. Run `node tools/visual/build-microscales.mjs` with an existing
 Playwright module path in `PLAYWRIGHT_MODULE` and browser in `BROWSER_EXECUTABLE`.
-The build derives neutral ink/emboss from the official artwork while retaining
-original alpha and chromatic accents. Original PNGs and provenance assets remain
+The build derives neutral ink/emboss from the official artwork. Brand derivatives
+retain geometry and neutral alpha, and normalize green coverage to an opaque fill
+with proportional antialiased edges so original translucency cannot lighten it.
+They use the CSS `--accent` dark olive (#214d3a),
+matching buttons and green text, including hover. Accent changes require rebuilding
+and versioning the three brand PNGs. Original PNGs and provenance assets remain
 unchanged. No image-generation model or runtime package is required.
 
 Initial panels and phrase dimensions come from HTML/CSS. Native fragment links

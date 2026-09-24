@@ -10,10 +10,10 @@
   --fg-muted: #505b54;
   --fg-faint: #606b63;
 
-  /* The characteristic AEKR green, taken from the brand mark. */
+  /* Single dark olive accent, also consumed by the offline brand asset build. */
   --accent: #214d3a;
   --accent-deep: #fffdf6;
-  --accent-dim: #356149;
+  --accent-dim: var(--accent);
 
   --border: #c6cbbf;
   --border-soft: #dddcd0;
@@ -193,12 +193,12 @@ p {
 }
 
 /* Reuse the official 480px logo: the lettering crop is x100/y302, 280x60.
-   This preserves its drawn A/E/K/R and mint dot without substituting a font. */
+   This preserves its drawn A/E/K/R and dot without substituting a font. */
 .brand-lettering {
   display: block;
   width: 100%;
   aspect-ratio: 14 / 3;
-  background-image: url("assets/aekr-logo-ivory-v1.png");
+  background-image: url("assets/aekr-logo-ivory-v2.png");
   background-size: 171.428571% auto;
   background-position: 50% 71.904762%;
   background-repeat: no-repeat;
@@ -493,7 +493,7 @@ main {
 }
 
 .btn-primary:hover {
-  background: color-mix(in srgb, var(--accent) 88%, white);
+  background: var(--accent);
 }
 
 .btn-ghost {
@@ -881,7 +881,7 @@ main {
 }
 
 .btn-pricing:hover {
-  background: color-mix(in srgb, var(--accent) 88%, white);
+  background: var(--accent);
   box-shadow: 0 6px 22px -10px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
@@ -969,7 +969,7 @@ main {
 .provenance img {
   width: clamp(200px, 42vw, 320px);
   height: auto;
-  opacity: 0.85;
+  opacity: 1;
   mask-image:
     linear-gradient(to right, transparent 1.5%, #000 5%, #000 95%, transparent 98.5%),
     linear-gradient(to bottom, transparent 3%, #000 10%, #000 90%, transparent 97%);
