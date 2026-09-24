@@ -279,6 +279,12 @@ try {
     assert.equal(state.scaleX, 1); assert.equal(state.scaleY, 1); assert.equal(state.filter, 'none');
     assert.equal(state.animations, 0, 'Reading has no active phrase animation');
   };
+  // The lazy footer bitmap's natural aspect ratio settles the centered hero.
+  // Wait for decode and the viewport observer before measuring phrase motion.
+  await heroPage.locator('.provenance img').evaluate(image => image.decode());
+  await heroPage.waitForFunction(() =>
+    parseFloat(document.documentElement.style.getPropertyValue('--section-footer-height')) ===
+      document.querySelector('.site-footer').getBoundingClientRect().height);
   await phase(heroPage, 'dwell');
   const readable = await phraseState(heroPage);
   fullyReadable(readable);

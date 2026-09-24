@@ -1,9 +1,65 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Existing public website; restrained phrase transitions and EN/SP toggle refinement.
+**Status:** FROZEN — fase web cerrada por Ed el 2026-09-06; release público `ec21286`. Estado, evidencia y próxima fase: [informe de freeze](FREEZE-2026-09-06.md).
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Website closure and external integration boundary — 2026-09-06
+
+La instrucción posterior de Ed cierra esta fase y congela aekr-web. La consulta
+de autenticación correspondía a accreatio, otro proyecto. El informe de freeze
+anteriormente enlazado prevalece para el estado del corte; los registros que
+siguen conservan su fecha y alcance. Los pendientes se trasladan a una próxima
+fase no iniciada. Reabrir requiere una instrucción explícita del propietario.
+
+Ed confirmed that movement is resolved and requested completion of the remaining
+website work. Current inspection found no outstanding functional change in the
+declared quiet-motion increment. Local HEAD and the remote master both resolve
+to `ec2128639bb85384467d77d40202e940e2a94dcc`, the merged PR #13 release.
+The exact merge commit has successful GitHub validation and Cloudflare Workers
+Builds checks. HTTP readback of the homepage, stylesheet, section controller,
+translation script, atmosphere/contact script and 404 document matches local
+release bytes; an unknown URL returns HTTP 404. The connected Brave tab also
+shows the released site and EN/SP control. This closes the previously open
+merged-source and live-asset readback for that increment.
+
+The planned remaining change was documentation only: reuse this operating guide for the
+closure and scope boundary, and correct the README's script inventory. No new
+document system, dependency, runtime behavior, interface, configuration or
+Project Map component is needed. Movement, accessibility preferences, artwork,
+contact behavior, Worker and hosting are excluded from this change. Historical
+records below retain their original scope and verification limitations.
+
+Closure verification exposed a browser-fixture race, not a phrase-animation
+change: before the lazy footer banner decodes, its declared aspect ratio places
+the hero at 610.140625 px; after decode, the natural ratio moves it to
+610.296875 px. A delayed-image reproduction confirmed both samples remained
+in the reading phase. The minimal test-only correction waits for banner decode
+and the existing footer-height observer before sampling. Exact stationary-line
+assertions remain unchanged; no production source or asset is modified.
+
+Validation result: `npm run check`, the complete `npm run check:browser` and
+`git diff --check` passed. The browser suite used local static assets in Brave,
+with intercepted email requests and zero page errors. A separate author reviewed
+the closure text and implemented the fixture correction; the orchestrator
+reviewed that test diff. This is shared-context review, not an independent Audit.
+The closure inventory is README +4/-2, this guide +51/-1 and browser tests +6/-0;
+there is no runtime complexity or public-contract delta. These closure changes
+are local worktree changes, separate from the already verified live release.
+
+**External work in progress (owner report, not deployment evidence):** another
+session is integrating the kommiBo console into the website, with intended
+access at `https://aekr.io/kommibo`. The kommiBo repository owns that work and its
+implementation details. This website-closure task records the coordination
+boundary only; it does not implement the console, routes, authentication,
+bindings, credentials or infrastructure. Availability and acceptance of that
+integration require evidence from its owning session.
+
+Real email inbox receipt remains unverified; browser tests intercept submissions.
+Account billing, deployment-control configuration and durable abuse protection
+retain the separate evidence boundaries below. These are not newly authorized
+implementation tasks or evidence that the visual release failed.
 
 ## Quiet motion and EN/SP toggle — 2026-09-05
 

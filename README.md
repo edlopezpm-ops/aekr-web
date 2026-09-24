@@ -22,8 +22,8 @@ before substantive repository work.
 
 ## Stack
 
-Static HTML + CSS with one dependency-free script for the interactive
-background and the contact form. No framework, no bundler, no npm
+Static HTML + CSS with dependency-free scripts for the interactive background,
+contact form, section navigation and English/Spanish selection. No framework, no bundler, no npm
 dependencies at runtime. A small Worker sits in front of the static assets to
 handle contact-form delivery.
 
@@ -33,6 +33,8 @@ aekr-web/
 │   ├── index.html
 │   ├── styles.css
 │   ├── script.js
+│   ├── sections.js
+│   ├── i18n.js
 │   ├── 404.html
 │   ├── favicon.ico
 │   ├── robots.txt
