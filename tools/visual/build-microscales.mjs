@@ -50,7 +50,7 @@ try {
         }
       }
       ctx.putImageData(data, 0, 0);
-      result[`aekr-${name}-ivory-v2.png`] = c.toDataURL('image/png');
+      result[`aekr-${name}-ivory-v3.png`] = c.toDataURL('image/png');
     }
     const mask = canvas(96, 96), mc = mask.getContext('2d');
     mc.drawImage(images.mark, 3, 3, 90, 90);
@@ -61,10 +61,13 @@ try {
     };
     const sprite = canvas(96, 96), sc = sprite.getContext('2d');
     sc.globalAlpha = config.relief;
-    sc.drawImage(tinted('#887b67'), 1.6, 1.8);
-    sc.globalAlpha = 0.95; sc.drawImage(tinted('#fffdf7'), -1.1, -1.2);
-    sc.globalAlpha = 0.42; sc.drawImage(tinted('#e4ddcf'), 0, 0);
-    result['aekr-scale-emboss-v1.png'] = sprite.toDataURL('image/png');
+    // A tiny original mark has subpixel strokes. Layer its own alpha with a
+    // one-pixel shoulder so the relief survives downsampling to petal size.
+    const shadow = tinted('#96856b');
+    for (const [x, y] of [[1, 1.5], [2, 1.5], [1.5, 2.5]]) sc.drawImage(shadow, x, y);
+    sc.globalAlpha = 0.98; sc.drawImage(tinted('#fffefb'), -1.6, -1.8);
+    sc.globalAlpha = 0.55; sc.drawImage(tinted('#d6c9b2'), 0, 0);
+    result[`aekr-scale-emboss-${config.version}.png`] = sprite.toDataURL('image/png');
     for (const mobile of [false, true]) {
       const width = mobile ? config.mobileWidth : config.width;
       const surface = canvas(width * 2, config.height * 2), ctx = surface.getContext('2d');
@@ -75,15 +78,16 @@ try {
         if (!p.alpha || eligible.has(p.index)) continue;
         const size = p.size * (mobile ? config.mobileSize : 1);
         ctx.save(); ctx.translate(p.x * width / config.width, p.y); ctx.rotate(p.angle);
-        ctx.globalAlpha = p.alpha * (mobile ? config.mobileOpacity : 1);
+        ctx.globalAlpha = p.alpha * config.surfaceOpacity * (mobile ? config.mobileOpacity : 1);
         ctx.drawImage(sprite, -size / 2, -size / 2, size, size); ctx.restore();
       }
-      result[`aekr-microscales-${mobile ? 'mobile' : 'surface'}-v1.webp`] = surface.toDataURL('image/webp', 0.84);
+      result[`aekr-microscales-${mobile ? 'mobile' : 'surface'}-${config.version}.webp`] = surface.toDataURL('image/webp', 0.90);
     }
     return result;
   }, { inputs, accentRgb });
   const manifest = {};
   for (const [name, uri] of Object.entries(assets)) {
+    if (process.argv.includes('--surface-only') && /^aekr-(mark|logo|banner)-/.test(name)) continue;
     const bytes = Buffer.from(uri.split(',')[1], 'base64');
     await writeFile(new URL(`public/assets/${name}`, root), bytes);
     manifest[name] = { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };

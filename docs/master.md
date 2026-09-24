@@ -1,9 +1,116 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Visual increment reopened by Ed on 2026-09-23 (local date): ivory microtexture, recoverable archive and local preview. Local preview approved by Ed; Git delivery and live verification in progress. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
+**Status:** Ed approved the local visual correction on 2026-09-24 and authorized commit and push: compact centered panels, corner attribution, dense multi-axis petal motion, slower unpaused phrases and slightly lighter olive. Repository and browser verification pass. Production publication is not established by this approval or the local evidence. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Compact panels and visible micro-emblem breeze — 2026-09-24 UTC
+
+The owner's current request and supplied scrolling video/screenshots govern this
+correction. The red drawing describes the diagonal source field on the right and
+lower background; it is not website artwork. The desired flight resembles light
+petals: identifiable tiny AEKR emblems detach, drift left, flutter and dissolve.
+The contact panel should fit without internal scrolling at ordinary desktop sizes,
+and attribution should occupy the two lower corners instead of a central footer.
+
+Minimum sufficient change, before implementation: inspection found an existing
+Canvas renderer, seeded asset generator and accessible panel controller. The
+renderer permits only six extremely faint flights and starts fading at 16% of a
+short 140–280-unit journey. Footer geometry reserves 110px and stacks attribution
+under the panel. Reuse these existing boundaries (ladder level 2): adjust relief,
+source distribution and flight behavior in the current generator/config/renderer;
+compact CSS layout and its existing viewport measurement. Native Canvas/CSS cover
+the requirement without a new renderer, dependency, service or public API.
+Preserve official source PNGs, dark olive branding, content, contact delivery,
+language/history behavior and hidden-tab controls. Small screens,
+text enlargement and virtual keyboards must retain access to overflowing content.
+
+Scope: local source/assets and relevant existing regression tests/documentation.
+No hosting configuration, Worker, credential, automatic switch, external contact
+submission or upstream repository change. Verification will cover actual desktop
+and mobile browser geometry, visible motion over time, source-to-flight continuity,
+pointer response, lifecycle/resource bounds and repository checks.
+Visual acceptance belongs to Ed after the working local preview is available.
+
+Subsequent owner instructions in this same session supersede the prior motion
+policy: increase source density; a new emblem grows after each detachment; use
+a sakura-like shower with independent motion on multiple axes; remove the pause
+button and reduced-motion branches; slow the central phrases and soften their
+transitions. This changes the website's motion behavior only, without changing
+machine preferences or governance switches. Semantic markup, form labels and
+existing keyboard navigation remain part of the document structure.
+
+Implementation: the source field now contains 7,200 seeded emblems (up from the
+initial correction's 2,600), with 128 reserved live sources. A bounded pool of 64
+desktop / 44 narrow-screen petals drifts through smoothly changing per-petal wind
+velocities in X/Y and depth, with independent projected X/Y/Z rotation. Vacated
+sources regrow after one emblem-width of clearance; each flight splits into four
+fading pieces near its end. Canvas uses the existing pixel/FPS budgets and stops
+in hidden tabs or on rendering failure. No new library or rendering system was
+introduced. Original artwork and the previous brand derivatives remain byte-identical.
+At Ed's subsequent request, flights settle to 80% of their surface size during
+the first 800ms of release and emit at random 90–180ms intervals. Version-2
+texture/relief assets are generated locally; the surface-only build
+option avoids re-encoding the unrelated brand PNGs.
+
+Ed subsequently requested a slightly lighter olive. The shared accent is now
+`#2b5b43` (previously `#214d3a`); new version-3 mark/logo/banner derivatives read
+that same CSS token. Their geometry and source silhouettes are preserved. The
+in-app preview reports `rgb(43, 91, 67)` for the primary button and uses the new
+asset URLs, while the original and version-2 source assets remain recoverable.
+
+Layout reuses the existing viewport shell: a transparent corner footer reserves
+56px desktop / 48px narrow-screen space. Contact uses a desktop introduction/form
+grid; Lifecycle steps use two columns, Engagements three, with linear narrow-screen
+fallbacks. Panels use safe centering and retain overflow access where content cannot
+fit. The pause button, translations, wiring and all reduced-motion branches were
+removed. Phrases use 7,500ms dwell and 1,200ms fades; panel transitions use 1,800ms.
+
+Verification: before the correction, Contact at 1280x720 required
+300px of internal scrolling. The new regression matrix passes for all seven panels
+at 1366x768 and 1440x900 in both languages, and Contact at 1280x720. It checks corner
+attribution, complete clickable form actions and stable Contact geometry during
+wheel input. Renderer simulations pass three-minute desktop/narrow runs, exact
+source transfer/rebirth, visible travel, independent rotation, pointer proximity,
+hidden/resume and image/context/resize failures. The actual in-app preview reported
+an active but sparse five-petal narrow-screen pool before the final shower change;
+the system motion preference was not suppressing that particular preview.
+
+Final local verification passed: `npm run check`, `npm run check:map`,
+`git diff --check`, and the full browser suite (17 groups, zero page errors).
+After the last density/size/color adjustment, a new browser page confirmed actual
+Canvas pixel changes with a reduced-motion preference, 128/64/44 source/flight
+limits, 0.8 flight size, decoded version-3 assets and the common olive color.
+The intermediate 959x805 Contact overflow was corrected by starting its grid at
+900px; focused EN/ES tests now show zero overflow at 900x805, 959x805 and 686x805.
+At 200% text size, all fields, actions and Back remain reachable and unobstructed.
+No remaining local verification finding is open. Physical devices and production
+are outside this local evidence; visual acceptance remains with Ed.
+
+Final change inventory: seven existing public HTML/CSS/JS files, six versioned
+artwork derivatives, the existing asset generator, two existing test files and
+README/this guide. No runtime dependency, contact/API contract, hosting or
+operational service was added. The extra per-petal state replaces a shared simple
+trajectory to satisfy independent wind, depth and rotation; bounded pools and
+fixed fragment counts contain that cost. Removing pause/preference branches
+simplifies the story and animation paths as expressly requested. Source art,
+Worker code and hosting configuration are unchanged. Exact changed-file sizes,
+hashes and descriptive line deltas are captured in the local output manifest.
+Evidence: `.aekr/local-review/full-browser-petals.log`,
+`final-motion-color.json`, `contact-grid-final.log` and
+`final-output-manifest.json` under that same directory. These are local records,
+not CI, deployment, external email delivery or product acceptance.
+
+### Owner approval and Git delivery — 2026-09-24
+
+After reviewing and refining the local preview, Ed stated: "aprobado, commit y push".
+This records acceptance of the local visual result and authorizes committing and
+pushing the reviewed change on `codex/compact-panels-sakura-breeze`. Source and
+asset hashes are checked against the local output manifest before staging; this
+approval record is the only subsequent documentation change. Local test evidence
+above remains valid. A branch push does not itself establish merge, production
+deployment, live asset parity or external email delivery.
 
 ## Ivory microtexture increment — 2026-09-24 UTC
 

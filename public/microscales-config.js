@@ -3,13 +3,13 @@
 (() => {
   'use strict';
   const config = Object.freeze({
-    version: 'v1', seed: 0xAE2026, width: 1600, height: 1000,
-    mobileWidth: 600, mobileSize: 0.78, mobileOpacity: 0.65,
-    count: 4700, size: [18, 31], relief: 0.32, eligible: 18,
-    maxDesktop: 6, maxMobile: 3, mobileBreakpoint: 768,
-    duration: [14000, 23000], emission: [2800, 5200], firstEmission: 1800,
-    fadeStart: 0.16, fadeExponent: 1.4,
-    travel: [140, 280], oscillation: 12, rotation: 0.7,
+    version: 'v2', seed: 0xAE2026, width: 1600, height: 1000,
+    mobileWidth: 600, mobileSize: 0.85, mobileOpacity: 0.85,
+    count: 7200, size: [26, 43], relief: 0.70, surfaceOpacity: 0.65, eligible: 128,
+    maxDesktop: 64, maxMobile: 44, mobileBreakpoint: 768, flightSize: 0.8,
+    duration: [14000, 22000], emission: [90, 180], firstEmission: 120,
+    fadeStart: 0.52, fadeExponent: 1.15,
+    speed: [38, 72], sway: [-36, 58], gustInterval: [900, 2600],
     fps: 30, maxDpr: 1.5, maxPixels: 2400000,
     surfaceAmplitude: 0.65, surfacePeriod: 21000,
   });
@@ -27,8 +27,8 @@
     const next = random();
     return Array.from({ length: config.count }, (_, index) => {
       const x = next(), y = next();
-      const edge = 0.62 - y * 0.24 + Math.sin(y * 7) * 0.035;
-      const fade = Math.max(0, Math.min(1, (x - edge) / 0.30));
+      const edge = 0.76 - y * 0.52 + Math.sin(y * 9) * 0.035;
+      const fade = Math.max(0, Math.min(1, (x - edge) / 0.22));
       return { x: x * config.width, y: y * config.height,
         size: config.size[0] + next() * (config.size[1] - config.size[0]),
         angle: (next() - 0.5) * 1.5,
@@ -36,7 +36,7 @@
     });
   }
   const points = distribution();
-  const sources = points.filter(p => p.alpha > 0.50 && p.x < 1510 && p.y > 80 && p.y < 920)
-    .filter((_, i) => i % 61 === 0).slice(0, config.eligible);
+  const candidates = points.filter(p => p.alpha > 0.40 && p.x < 1540 && p.y > 60 && p.y < 960);
+  const sources = Array.from({ length: config.eligible }, (_, i) => candidates[Math.floor(i * candidates.length / config.eligible)]);
   globalThis.AEKRMicroscales = Object.freeze({ config, random, points, sources });
 })();

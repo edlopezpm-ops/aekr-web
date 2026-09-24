@@ -114,8 +114,6 @@
     ['AEKR introduction', 'Introducción de AEKR'],
     ['Section', 'Sección'],
     ['of', 'de'],
-    ['Pause rotating introduction', 'Pausar las frases de introducción'],
-    ['Resume rotating introduction', 'Reanudar las frases de introducción'],
     ['Enter a valid email address so we can reply.', 'Introduce un correo electrónico válido para que podamos responder.'],
     ['Sending…', 'Enviando…'],
     ["We couldn't send your request. Please try again.", 'No pudimos enviar tu solicitud. Inténtalo de nuevo.'],

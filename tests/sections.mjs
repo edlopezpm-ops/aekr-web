@@ -122,6 +122,87 @@ async function geometry(page) {
   assert.equal(result.scrollbar, 'none'); assert.equal(result.copyright, '© 2026');
 }
 
+async function compactDesktopPanels() {
+  for (const viewport of [
+    { width: 1366, height: 768 }, { width: 1440, height: 900 }, { width: 1280, height: 720 },
+    { width: 959, height: 805 }, { width: 900, height: 805 }, { width: 686, height: 805 },
+  ]) {
+    const compact = await open({ viewport }, '#contact');
+    await active(compact, 'contact');
+    for (const language of ['en', 'es']) {
+      await chooseLanguage(compact, language);
+      const label = `${viewport.width}x${viewport.height} ${language}`;
+      for (const id of viewport.width >= 1366 ? ids : ['contact']) {
+        await go(compact, id); await geometry(compact);
+        const size = await compact.locator('.section-panel.is-active').evaluate(panel => ({
+          viewport: panel.clientHeight, content: panel.scrollHeight, scroll: panel.scrollTop,
+        }));
+        assert(size.content <= size.viewport + 1, `${label} #${id}: the complete desktop panel fits without inner scrolling (${size.content}/${size.viewport})`);
+        assert.equal(size.scroll, 0, `${label} #${id}: the panel starts with every row visible`);
+      }
+      const corners = await compact.evaluate(() => {
+        const box = selector => {
+          const r = document.querySelector(selector).getBoundingClientRect();
+          return { left: r.left, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        };
+        return { banner: box('.provenance img'), legal: box('.footer-legal') };
+      });
+      assert(corners.banner.width <= 180 && corners.banner.height <= 52,
+        `${label}: the attribution banner stays compact`);
+      assert(corners.banner.left > viewport.width / 2 && viewport.width - corners.banner.right <= 40,
+        `${label}: the banner occupies the lower right corner`);
+      assert(corners.legal.left >= 0 && corners.legal.left <= 40 && corners.legal.right < viewport.width / 2,
+        `${label}: copyright occupies the lower left corner`);
+      for (const corner of Object.values(corners)) {
+        assert(corner.bottom <= viewport.height + 1 && viewport.height - corner.bottom <= 32,
+          `${label}: attribution stays at the viewport bottom`);
+      }
+      const contactFrame = () => compact.evaluate(() => {
+        const panel = document.querySelector('#contact'), bounds = panel.getBoundingClientRect();
+        const elements = [...panel.querySelectorAll('#contact-heading, #contact-form, .form-actions button, .contact-home')];
+        return { scroll: panel.scrollTop, boxes: elements.map(element => {
+          const r = element.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height };
+        }), controlsReachable: [...panel.querySelectorAll('.form-actions button, .contact-home')].every(element => {
+          const r = element.getBoundingClientRect();
+          return r.top >= bounds.top && r.bottom <= bounds.bottom
+            && [r.top + 4, r.top + r.height / 2, r.bottom - 4].map(y => [r.left + r.width / 2, y])
+              .every(([x, y]) => element.contains(document.elementFromPoint(x, y)));
+        }) };
+      });
+      const before = await contactFrame();
+      assert(before.controlsReachable, `${label}: both Contact actions and Back are fully visible and hit-testable`);
+      const form = await compact.locator('#contact-form').boundingBox();
+      await compact.mouse.move(form.x + 12, form.y + 12);
+      await compact.mouse.wheel(0, 360); await compact.waitForTimeout(250);
+      assert.equal(await compact.locator('main').getAttribute('data-active-section'), 'contact');
+      assert.deepEqual(await contactFrame(), before, `${label}: a downward wheel gesture cannot shift Contact or its controls`);
+      if (shots) await compact.screenshot({ path: path.join(shots, `compact-contact-${viewport.width}-${language}.png`) });
+    }
+    if (viewport.width === 959) {
+      await compact.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      await compact.waitForTimeout(300);
+      for (const language of ['en', 'es']) {
+        await chooseLanguage(compact, language);
+        for (const selector of ['#contact-email', '#contact-comment', '.form-actions button[data-request-type="pricing"]', '.form-actions button[data-request-type="contact"]', '.contact-home']) {
+          const control = compact.locator(selector);
+          await control.scrollIntoViewIfNeeded();
+          assert(await control.evaluate(element => {
+            const r = element.getBoundingClientRect(), panel = element.closest('.section-panel').getBoundingClientRect();
+            const x = r.left + r.width / 2, y = r.top + r.height / 2;
+            return x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom
+              && element.contains(document.elementFromPoint(x, y));
+          }), `959x805 ${language} at 200% text: ${selector} remains reachable and unobstructed`);
+        }
+        await geometry(compact);
+        if (shots) await compact.screenshot({ path: path.join(shots, `compact-contact-959-${language}-enlarged.png`) });
+      }
+    }
+    await compact.context().close();
+  }
+  console.log('PASS: complete desktop panels and compact Contact in both languages, stationary forms, corner attribution and unobstructed actions');
+}
+
 async function brandFrame(page) {
   return page.evaluate(() => {
     const box = el => {
@@ -244,6 +325,7 @@ async function brandJourney(page, label) {
 
 try {
   await startupGeometry();
+  await compactDesktopPanels();
   const page = await open({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' }, '', {}, () => {
     window.atmosphereDraws = 0;
     const clear = CanvasRenderingContext2D.prototype.clearRect;
@@ -253,22 +335,23 @@ try {
     };
   });
   await active(page, 'main'); await geometry(page);
-  assert.equal(await page.locator('.background-pause').count(), 0, 'The owner-requested background has no pause button');
+  assert.equal(await page.locator('.background-pause, .hero-pause').count(), 0, 'The owner-requested page has no pause controls');
   await page.waitForFunction(() => document.querySelector('.atmosphere').dataset.renderer === 'canvas2d'
     && Number(document.querySelector('.atmosphere').dataset.particles) > 0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForFunction(() => document.querySelector('.atmosphere').dataset.paused === 'true'
-    && document.querySelector('.atmosphere').dataset.particles === '0');
-  const still = await page.evaluate(() => ({ draws: window.atmosphereDraws,
-    drift: document.querySelector('.atmosphere').style.getPropertyValue('--surface-drift') }));
-  await page.waitForTimeout(200);
-  assert.deepEqual(await page.evaluate(() => ({ draws: window.atmosphereDraws,
-    drift: document.querySelector('.atmosphere').style.getPropertyValue('--surface-drift') })), still,
-  'Dynamic reduced motion stops decorative drawing and surface drift');
+  const beforeMotion = await page.evaluate(() => ({ draws: window.atmosphereDraws,
+    pixels: document.querySelector('.atmosphere__scales').toDataURL() }));
+  await page.waitForTimeout(1200);
+  const afterMotion = await page.evaluate(() => ({ draws: window.atmosphereDraws,
+    pixels: document.querySelector('.atmosphere__scales').toDataURL(),
+    paused: document.querySelector('.atmosphere').dataset.paused }));
+  assert.equal(afterMotion.paused, 'false');
+  assert(afterMotion.draws > beforeMotion.draws && afterMotion.pixels !== beforeMotion.pixels,
+    'The visible petal layer keeps changing even when the browser reports reduced motion');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.waitForFunction(draws => document.querySelector('.atmosphere').dataset.paused === 'false'
-    && window.atmosphereDraws > draws, still.draws);
-  console.log('PASS: live reduced-motion changes clear flights, stop drawing and resume the same background');
+    && window.atmosphereDraws > draws, afterMotion.draws);
+  console.log('PASS: visible animated petals continue across browser motion preferences with no pause controls');
   assert.equal(await page.locator('.hero-particles, .brand-particles').count(), 0, 'Phrase and symbol particle layers are removed');
   assert(await page.locator('canvas').evaluateAll(canvases => canvases.every(canvas => canvas.closest('.atmosphere'))),
     'Only the decorative atmosphere owns Canvas elements');
@@ -294,8 +377,9 @@ try {
     }
     const currentScript = await readFile(path.join(root, 'public/script.js'), 'utf8');
     const contactBoundary = '   Both buttons post to the same endpoint';
-    assert.equal(currentScript.split(contactBoundary)[1], sources['script.js'].split(contactBoundary)[1],
-      'The contact interface and request handlers remain byte-identical');
+    assert(currentScript.includes(contactBoundary) && sources['script.js'].includes(contactBoundary));
+    assert.equal(currentScript.replace(/\r\n/g, '\n').split(contactBoundary)[1], sources['script.js'].replace(/\r\n/g, '\n').split(contactBoundary)[1],
+      'The contact source remains identical after Git line-ending normalization');
     assert.equal(await page.locator('.hero-tagline').count(), 0, 'The fixed tagline is removed');
     assert.equal(await page.locator('.hero-phrase').filter({ hasText: 'Humans orchestrate. Machines execute.' }).count(), 1,
       'The former tagline appears once in the phrase loop');
@@ -313,16 +397,19 @@ try {
       assert(Math.abs(updatedSizes[key] - originalSizes[key]) < .01, `${key} retains its approved size`);
     }
     await go(oldPage, 'lifecycle'); await go(page, 'lifecycle');
-    const lifecycleSize = p => p.evaluate(() => {
+    const lifecycleLayout = await page.evaluate(() => {
+      const panel = document.querySelector('#lifecycle').getBoundingClientRect();
       const list = document.querySelector('.lifecycle').getBoundingClientRect();
       const layer = document.querySelector('.lifecycle-layer').getBoundingClientRect();
-      return { width: layer.width, height: layer.height, aside: layer.left >= list.right,
-        centerOffset: Math.abs((layer.top + layer.bottom - list.top - list.bottom) / 2),
-        fits: layer.top >= list.top && layer.bottom <= list.bottom };
+      const phases = [...document.querySelectorAll('.phase')].map(el => el.getBoundingClientRect());
+      return { followsStages: layer.top >= list.bottom,
+        fits: layer.left >= panel.left && layer.right <= panel.right && layer.bottom <= panel.bottom,
+        distinctStages: phases.every((phase, i) => phases.slice(i + 1).every(other =>
+          Math.min(phase.right, other.right) <= Math.max(phase.left, other.left) + 1 ||
+          Math.min(phase.bottom, other.bottom) <= Math.max(phase.top, other.top) + 1)) };
     });
-    const oldLifecycle = await lifecycleSize(oldPage), newLifecycle = await lifecycleSize(page);
-    assert(newLifecycle.aside && newLifecycle.fits && newLifecycle.centerOffset < 1, 'Interferometry is centered beside the stages');
-    assert.deepEqual(newLifecycle, oldLifecycle, 'Desktop Interferometry retains its approved geometry');
+    assert(lifecycleLayout.followsStages && lifecycleLayout.fits && lifecycleLayout.distinctStages,
+      'The compact lifecycle keeps stages distinct and verification fully visible after them');
     const upperGap = p => p.locator('.hero-story').evaluate(el => parseFloat(getComputedStyle(el).marginTop));
     assert.equal(await upperGap(page), await upperGap(oldPage), 'The approved phrase spacing is preserved');
     assert.equal((await page.locator('.contact-home').textContent()).trim(), 'Back');
@@ -330,7 +417,8 @@ try {
       const elements = document.querySelectorAll('.site-header, .site-footer, .section-nav, .section-panel.is-active h2, .section-panel.is-active h3, .section-panel.is-active p, .section-panel.is-active li, .section-panel.is-active input, .section-panel.is-active textarea');
       return [...elements].map(el => {
         const style = getComputedStyle(el);
-        return { text: el.textContent.trim(), fontSize: style.fontSize, lineHeight: style.lineHeight };
+        return { text: el.textContent.replace(/\s+/g, ' ').trim(), fontSize: style.fontSize, lineHeight: style.lineHeight,
+          compactSpacing: el.matches('.phase-body p, .lifecycle-layer') };
       });
     });
     for (const id of ids.slice(1)) {
@@ -338,7 +426,13 @@ try {
       const before = await desktopLayout(oldPage), after = await desktopLayout(page);
       // The compact-only Menu button is hidden on desktop but part of header text.
       before[0].text = after[0].text = '';
-      assert.deepEqual(after, before, `Desktop ${id} keeps its content and typography`);
+      for (let i = 0; i < after.length; i++) {
+        if (!after[i].compactSpacing) continue;
+        assert(parseFloat(after[i].lineHeight) >= parseFloat(after[i].fontSize) * 1.49,
+          'Compact lifecycle prose retains readable line spacing');
+        before[i].lineHeight = after[i].lineHeight;
+      }
+      assert.deepEqual(after, before, `Desktop ${id} keeps its content and type sizes outside authorized lifecycle spacing`);
     }
     console.log('PASS: approved identity, section content/typography, unchanged contact boundary and Back preserved');
     await oldPage.context().close();
@@ -390,7 +484,7 @@ try {
     const start = phases.slice(0, end).findLast(p => p.phase === 'dwell');
     return phases[end].at - start.at;
   });
-  assert(dwellDuration >= 2990 && dwellDuration < 3300, `Static reading lasts three seconds: ${dwellDuration} ms`);
+  assert(dwellDuration >= 6990 && dwellDuration < 9500, `The slower phrase loop leaves a long stationary reading interval: ${dwellDuration} ms`);
   await heroPage.waitForTimeout(80);
   const leaving = await phraseState(heroPage);
   assert(leaving.opacity > 0 && leaving.opacity < 1 && leaving.y < 0 && leaving.y >= -2.01,
@@ -409,16 +503,15 @@ try {
   await phase(heroPage, 'dwell');
   fullyReadable(await phraseState(heroPage));
   assert.equal((await phraseState(heroPage)).height, readable.height, 'The loop reserves stable layout height');
-  for (const interruptedPhase of ['leaving', 'entering']) {
-    await phase(heroPage, interruptedPhase);
-    await heroPage.locator('.hero-pause').click();
-    await phase(heroPage, 'paused');
-    const paused = await phraseState(heroPage); fullyReadable(paused);
-    assert.equal(await heroPage.locator('.hero-pause').getAttribute('aria-pressed'), 'true');
-    await heroPage.waitForTimeout(700);
-    assert.deepEqual(await phraseState(heroPage), paused, 'Pause cancels an in-progress fade without a stale callback');
-    await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'dwell');
-  }
+  const fadeDurations = await heroPage.evaluate(() => {
+    const phases = window.heroEvidence.phases;
+    const leaving = phases.findIndex(p => p.phase === 'leaving');
+    const entering = phases.findIndex((p, i) => i > leaving && p.phase === 'entering');
+    const settled = phases.findIndex((p, i) => i > entering && p.phase === 'dwell');
+    return [phases[entering].at - phases[leaving].at, phases[settled].at - phases[entering].at];
+  });
+  assert(fadeDurations.every(duration => duration >= 990 && duration < 1900),
+    `Both whole-line fades are gradual: ${fadeDurations.join(', ')} ms`);
   for (const changingPhase of ['dwell', 'leaving', 'entering']) {
     await phase(heroPage, changingPhase);
     const before = await phraseState(heroPage);
@@ -429,12 +522,6 @@ try {
     await heroPage.waitForTimeout(450);
     assert.deepEqual(await phraseState(heroPage), translated, 'Canceled locale transitions cannot replace or hide the translated phrase');
   }
-  await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'paused');
-  const pausedLanguage = await heroPage.locator('html').getAttribute('lang') === 'en' ? 'es' : 'en';
-  await chooseLanguage(heroPage, pausedLanguage); await phase(heroPage, 'paused');
-  fullyReadable(await phraseState(heroPage));
-  assert.equal(await heroPage.locator('.hero-pause').getAttribute('aria-pressed'), 'true');
-  await heroPage.locator('.hero-pause').click(); await phase(heroPage, 'dwell');
   await go(heroPage, 'practice'); await phase(heroPage, 'paused');
   const offSection = await phraseState(heroPage); fullyReadable(offSection);
   await heroPage.waitForTimeout(700);
@@ -458,13 +545,16 @@ try {
   await phase(heroPage, 'dwell'); fullyReadable(await phraseState(heroPage));
   await geometry(heroPage);
   await phase(heroPage, 'entering'); await geometry(heroPage);
-  await heroPage.locator('.hero-pause').focus();
   await heroPage.emulateMedia({ reducedMotion: 'reduce' });
-  await heroPage.waitForFunction(() => document.querySelector('.hero-story').hidden);
-  assert(await heroPage.locator('.hero-lede').evaluate(el => !el.classList.contains('visually-hidden')));
-  assert(await heroPage.locator('.hero').evaluate(el => el === document.activeElement), 'Motion preference changes recover focus from the hidden control');
+  assert(await heroPage.locator('.hero-story').isVisible(), 'The rotating introduction stays visible under reduced-motion emulation');
+  await phase(heroPage, 'dwell'); fullyReadable(await phraseState(heroPage));
+  await phase(heroPage, 'leaving');
+  await heroPage.waitForTimeout(300);
+  const preferenceFade = await phraseState(heroPage);
+  assert(preferenceFade.opacity > 0 && preferenceFade.opacity < 1,
+    'The next phrase still fades under reduced-motion emulation');
   await heroPage.context().close();
-  console.log('PASS: whole-line fades, tiny offsets, stationary three-second reading, pause, locale cancellation, suspension and reduced motion');
+  console.log('PASS: slower whole-line fades, long stationary reading, locale cancellation, hidden-tab suspension and continuing animation across motion preferences');
 
   for (const id of ids) {
     await go(page, id); await geometry(page);
@@ -1039,9 +1129,16 @@ try {
   assert(direct.docked && !direct.transitioning && direct.traveler.visible, 'Direct links initialize already docked');
   await reduced.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   await reduced.waitForTimeout(300); await geometry(reduced);
-  await go(reduced, 'contact'); await geometry(reduced); await edge(reduced, true);
-  const duration = await reduced.locator('.section-panel.is-active').evaluate(p => getComputedStyle(p).transitionDuration);
-  assert(duration.split(',').every(d => parseFloat(d) <= 0.001), 'Reduced motion disables perceptible panel transitions');
+  await (await sectionLink(reduced, 'contact')).click();
+  await reduced.waitForTimeout(1000);
+  const preferredTransition = await reduced.evaluate(() => ({
+    active: document.querySelector('main').dataset.transitioning,
+    opacity: Number(getComputedStyle(document.querySelector('#contact')).opacity),
+  }));
+  assert.equal(preferredTransition.active, 'true');
+  assert(preferredTransition.opacity > 0 && preferredTransition.opacity < 1,
+    'Section fades remain visible under reduced-motion emulation');
+  await active(reduced, 'contact'); await geometry(reduced); await edge(reduced, true);
   await reduced.setViewportSize({ width: 320, height: 568 });
   for (const id of ids) {
     await go(reduced, id); await geometry(reduced); await edge(reduced, true);
@@ -1084,7 +1181,7 @@ try {
   await fallback.locator('.section-home-fallback').click();
   assert(await fallback.locator('.hero').isVisible());
   assert.deepEqual(errors, []);
-  console.log('PASS: enlarged text, reduced motion, no-JavaScript fallback and zero page errors');
+  console.log('PASS: enlarged text, animation under either motion preference, no-JavaScript fallback and zero page errors');
 } finally {
   await browser.close();
   if (server) await new Promise(resolve => server.close(resolve));
