@@ -20,7 +20,7 @@ try {
   if (!accent) throw new Error('Expected a six-digit --accent color in styles.css');
   const accentRgb = accent.slice(1).match(/../g).map(value => parseInt(value, 16));
   const assets = await page.evaluate(async ({ inputs, accentRgb }) => {
-    const { config, points, sources } = AEKRMicroscales;
+    const { config, points } = AEKRMicroscales;
     const images = {};
     for (const [name, src] of Object.entries(inputs)) {
       const img = new Image(); img.src = src; await img.decode(); images[name] = img;
@@ -73,9 +73,8 @@ try {
       const surface = canvas(width * 2, config.height * 2), ctx = surface.getContext('2d');
       ctx.fillStyle = '#f6f2e9'; ctx.fillRect(0, 0, surface.width, surface.height);
       ctx.scale(2, 2);
-      const eligible = new Set(sources.map(p => p.index));
       for (const p of points) {
-        if (!p.alpha || eligible.has(p.index)) continue;
+        if (!p.alpha) continue;
         const size = p.size * (mobile ? config.mobileSize : 1);
         ctx.save(); ctx.translate(p.x * width / config.width, p.y); ctx.rotate(p.angle);
         ctx.globalAlpha = p.alpha * config.surfaceOpacity * (mobile ? config.mobileOpacity : 1);

@@ -1,9 +1,95 @@
 # aekr-web — project decisions and operating guide
 
-**Status:** Ed approved the local visual correction on 2026-09-24 and authorized commit and push: compact centered panels, corner attribution, dense multi-axis petal motion, slower unpaused phrases and slightly lighter olive. Repository and browser verification pass. Production publication is not established by this approval or the local evidence. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
+**Status:** The all-scales/+50% petal increment is locally verified and accepted for release: Ed explicitly authorized commit, push and publication to `aekr.io` on 2026-09-24. The prior verified production baseline is PR #16 / `bf06d37`; the new release requires exact-commit CI, deployment and public-file readback. Prior freeze remains historical: [freeze report](FREEZE-2026-09-06.md).
 **Governance:** Lean, Mode 0. **Owner:** Ed, Human Orchestrator in Chief (HOC).
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
+
+## Every scale can detach — 2026-09-24 UTC
+
+Ed requested a further local preview: all visible scales can detach, 50% more
+airborne petals, and subtle constant surface motion with irregular gusts. Both
+surface and flight travel horizontally only toward the left, with vertical and
+diagonal variation. The preceding approved increment is now independently
+confirmed live at `aekr.io`: merged PR #16, commit
+`bf06d373abd24c928bed32906b0e054da7d3e593`, successful GitHub validation and
+Cloudflare version `1380124e-1d75-47f1-8c15-4dc6a34670d3`; ten public files match
+the immutable commit byte for byte. That publication does not include this increment.
+
+Minimum sufficient change, before implementation: the existing source filter and
+baked surface reserve only 128 interactive emblems. Reuse the seeded points,
+Canvas renderer, generator, lifecycle and tests (ladder level 2). Draw all visible
+points in the existing Canvas; retain a complete static WebP for startup/failure.
+Eliminating the reserved subset fixes detachment at its source without layered
+erasing or a second particle engine. Native Canvas covers the requirement; no
+library, service or public interface is needed. Early real-browser measurements
+for 3,593 visible emblems were 14.8ms desktop / 11.8ms narrow-screen p95 drawing
+time at DPR 1.5, within the existing 30fps budget; final integration is still to
+be measured. Each surface scale moves a few pixels left during a staggered cycle,
+with a short invisible rebirth before its position resets. This permits subtle
+continuous motion without a visible rightward return. Random gusts vary the
+speed and vertical flutter. Flight limits become 96/66 and emission intervals
+60–120ms; individual shape, 80% flight size and dissolution are reused.
+
+Scope is renderer/configuration, versioned fallback textures, existing generator,
+CSS startup selection and relevant tests/docs. Branding, sections, content,
+contact delivery and hosting configuration stay outside this correction.
+Verification covers complete eligibility, exact transfer/rebirth, leftward
+motion, gust variation, browser cost and hidden/failure lifecycles. Visual review
+of this further increment remains with Ed; no new publication is claimed.
+
+Implementation: all 3,593 nontransparent emblems in the 7,200-point seeded
+distribution are now possible sources. Viewport culling includes partially
+visible edges; a map prevents simultaneous duplicate flights from one source.
+Each source has an independently staggered 14–26-second cycle, 2–5-unit leftward
+travel, vertical flutter and slight rotation. Random gusts every 2.4–6.8 seconds
+accelerate that motion. Source pose and opacity transfer exactly to the flight;
+rebirth waits until its petal clears an emblem width. The complete version-3
+WebP takes over if rendering fails. A complete per-draw transform avoids four
+extra Canvas operations per emblem. This is the existing renderer, without a
+second engine, spatial cache, runtime dependency or external service.
+
+Browser performance on this laptop: 3,593 possible sources, observed flight peaks
+96/66, about 29fps, p95 renderer callback time 12.0ms desktop / 13.1ms narrow
+viewport. Both runs had zero page errors and restored the static surface after
+context loss. These are actual Edge measurements at 1440x900 / 390x844 with the
+existing DPR/pixel budgets, not evidence from physical mobile devices. Results
+and screenshots are in `.aekr/local-review/all-scales-browser.json` and adjacent
+`all-scales-1440.png` / `all-scales-390.png`. Source review found no blocking
+continuity, direction, eligibility or lifecycle issue; that review does not
+replace Ed's visual acceptance.
+
+Final verification: `npm run check`, `npm run check:map`, `git diff --check`,
+the renderer lifecycle suite (nine groups) and the complete browser suite
+(17 groups, zero page errors) all pass. Logs are under `.aekr/local-review/`:
+`all-scales-check.log`, `all-scales-atmosphere.log` and
+`all-scales-sections.log`. Original branding, source artwork, contact/section
+controllers and hosting files are unchanged relative to `bf06d37`.
+
+Final inventory: four public HTML/CSS/JS files, three versioned texture/sprite
+assets, the existing generator and renderer test, README and this guide. The
+renderer adds 45 net lines; its source population expands from 128 reserved
+points to all 3,593 visible-artwork points, while flight work remains capped at
+96/66 plus four fragments per flight. Surface-cycle/gust parameters replace
+reserved-count/global-oscillation settings in the existing configuration. The
+per-source motion state and source-occupancy map are necessary for independent
+motion and exact transfer; no new abstraction boundary, public contract,
+dependency or operational service is introduced. Direct drawing remains within
+the measured budget, so a tile/cache system was deliberately unnecessary.
+No unresolved verification/minimality finding remains. The closed changed-file
+inventory with sizes, SHA-256 hashes and line deltas is
+`.aekr/local-review/all-scales-output-manifest.json`.
+
+### Owner approval and publication — 2026-09-24
+
+After reviewing the local result, Ed instructed: "commit y push y sube a aekr.io".
+This authorizes the reviewed increment's commit, push, integration into `master`
+and production publication through the existing Workers Builds integration.
+All eleven reviewed files match the local output manifest before this approval
+record is added. The recovery baseline is `bf06d37`, Cloudflare version
+`1380124e-1d75-47f1-8c15-4dc6a34670d3`, reverified against ten public files.
+Existing local test evidence remains valid; publication will be checked against
+the immutable release SHA, separately from feature-branch preview builds.
 
 ## Compact panels and visible micro-emblem breeze — 2026-09-24 UTC
 

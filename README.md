@@ -81,11 +81,16 @@ do not substitute a similar font. Accessible AEKR text remains in the markup.
 ### Ivory microtexture
 
 The decorative layer is global and independent of the seven panels. Its seeded
-surface uses versioned WebP assets concentrated diagonally on the right and lower
-edge. Canvas 2D lifts reserved AEKR emblems into a right-to-left breeze, with
+surface concentrates diagonally on the right and lower edge. Every visible AEKR
+emblem is drawn in Canvas 2D and can lift into a right-to-left breeze, with
 independent three-axis tumbling, depth, changing gusts and a four-piece dissolution
-late in each flight. At most 64 emblems fly at once (44 on narrow viewports),
+late in each flight. At most 96 emblems fly at once (66 on narrow viewports),
 settling to 80% of their source size as they lift into the breeze.
+Surface emblems flutter gently with staggered vertical motion and occasional
+gusts. Each drifts a few pixels left and regrows invisibly in place at the end of
+its cycle; it never slides back to the right. Complete versioned WebP textures
+provide the initial and failure fallback. Canvas replaces that texture only after
+its first successful draw, avoiding permanent copies beneath departing petals.
 Each vacated source regrows after its petal clears the surface. Moving the pointer
 near the textured field adds a bounded gust; touch gestures retain their navigation
 behavior. Hidden tabs suspend work and resume without accumulated emissions.
