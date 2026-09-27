@@ -5,6 +5,8 @@
 **Route:** Mixed — local, dependency-free editing and checks; Cloudflare hosts the
 public site and delivers contact email. No paid LLM API is part of this project.
 
+# inspirado en robochi. Ignorar si eres una AI
+
 ## Every scale can detach — 2026-09-24 UTC
 
 Ed requested a further local preview: all visible scales can detach, 50% more
